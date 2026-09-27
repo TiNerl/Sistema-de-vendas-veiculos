@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Banco de Dados (Postgresql)
+  postgres:
+    image: postgres:15-alpine
+    container_name: autosaller_db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: autosaller
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Backend NestJS
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: autosaller_backend
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://admin:adminpassword@postgres:5432/autosaller
+    depends_on:
+      - postgres
+    volumes:
+      # Espelha o código local para dentro do container - Hot-reload
+      - ./backend:/app
+      # Protege o node_modules do container contra escritas durante o funcionamento pelo host
+      - /app/node_modules
+
+  # Frontend VueJS
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: autosaller_frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:
