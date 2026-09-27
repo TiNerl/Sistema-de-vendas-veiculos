@@ -2,7 +2,7 @@
 
 # 🚗 AutoSaller — Sistema de Gestão de Vendas de Automóveis
 
-**Um sistema, duas disciplinas.** Documentação pensada para orientar o time do começo ao fim do semestre.
+**Um Sistema, duas disciplinas.** Documentação pensada para orientar o time do começo ao fim do semestre.
 
 </div>
 
@@ -14,7 +14,7 @@
 
 ## 🧭 Índice
 
-1. [Por que duas disciplinas em um só projeto](#-por-que-duas-disciplinas-em-um-só-projeto)
+1. [Por que AutoSaller?](#-Por-que-AutoSaller)
 2. [O sistema em uma frase](#-o-sistema-em-uma-frase)
 3. [Escopo: o que entra e o que não entra](#-escopo-o-que-entra-e-o-que-não-entra)
 4. [Requisitos por prioridade](#-requisitos-por-prioridade)
@@ -33,11 +33,12 @@
 
 ---
 
-## 📌 Por que duas disciplinas em um só projeto?
+## 📌 Por que AutoSaller?
 
-O Projeto Integrador cobra um sistema completo, ponta-a-ponta, guiado por três âncoras — **Banco de Dados**, **Sistemas Corporativos** e **Processo de Desenvolvimento** — avaliado em 4 marcos (M1–M4). Sistemas Corporativos, sendo uma dessas âncoras, tem a sua própria rubrica de 50 pontos.
+O **AutoSaller** foi criado para atender as necessidades do mercado de automóveis local de Currais Novos. O "Auto" refere-se aos automóveis e "Seller" refere-se ao vendedor ou lojista, o objetivo principal é satisfazer as necessidades de um mercado em crescente desenvolvimento e expansão ao longo prazo.
 
-Construindo o **AutoSaller** para atender as duas ao mesmo tempo, cada funcionalidade entregue conta em dois lugares — no marco do Projeto Integrador **e** na nota de Sistemas Corporativos — sem duplicar esforço. É por isso que este README trata as duas disciplinas juntas, e não como documentos separados.
+
+Sendo assim, a fim de satisfazer os requisitos das disciplinas, durante o desenvolvimento foi visado um sistema completo, ponta-a-ponta, guiado por três âncoras — **Banco de Dados**, **Sistemas Corporativos** e **Processo de Desenvolvimento** — estes avaliados em 4 marcos (M1–M4) com Sistemas Corporativos sendo uma dessas âncoras com sua rubrica própria.
 
 > **PoC vs. MVP vs. Product** (contexto rápido)
 > - **PoC** — "isso é possível?" → protótipo descartável, só valida a ideia.
@@ -130,7 +131,7 @@ Janelas de entrega do Cronograma (09/09 a 09/12):
 
 ## 🧩 Ordem de construção: fatias verticais
 
-O maior risco de "sistema complexo demais" é dividir o trabalho **por camada** (uma pessoa só no front, outra só no banco) — ninguém integra nada até a última semana. A saída é dividir **por fatia vertical**: cada entrega atravessa banco → back-end → front-end e já sobe para o ar, mesmo que pequena.
+O maior risco de "sistema complexo demais" é dividir o trabalho **por camada** (uma pessoa só no front, outra só no banco) — sem ninguém integra nada até a última semana. A saída é dividir **por fatia vertical**: cada entrega atravessa banco → back-end → front-end e já sobe para o ar, mesmo que pequena.
 
 A ordem abaixo segue as janelas do Cronograma, e cada fatia tem um responsável natural: quem escreveu os requisitos daquele módulo.
 
@@ -211,11 +212,11 @@ O diagrama está no [dbdiagram](https://dbdiagram.io/d/Diagrama-DER-AutoSeller-6
 | Testes, CI, contêineres e execução reproduzível | 6 | Testes automatizados a cada fatia, Docker Compose, pipeline simples de CI |
 | Documentação, demonstração e defesa | 10 | Este README + relatório ABNT + apresentação final |
 
-> **Regras que valem nota nessa disciplina:** todo mundo do grupo precisa dominar a solução inteira (a defesa é individual e pode ajustar a nota); código ou texto de terceiros usado precisa ser identificado e referenciado; a entrega precisa incluir instruções reproduzíveis e histórico de versão real.
+> **Regras que valem nota nessa disciplina:** todo mundo do grupo precisa dominar a solução inteira **(a defesa é individual e pode ajustar a nota)**; código ou texto de terceiros usado precisa ser identificado e devidamente referenciado; a entrega precisa incluir instruções reproduzíveis e histórico de versão real.
 
 ---
 
-## 🧱 Requisitos não funcionais: onde comprovar
+## 🧱 Requisitos não funcionais
 
 | RNF | Exigência | Onde se comprova |
 |---|---|---|
@@ -234,7 +235,7 @@ O diagrama está no [dbdiagram](https://dbdiagram.io/d/Diagrama-DER-AutoSeller-6
 
 ## 📁 Estrutura do repositório
 
-Um **monorepo único** (um repositório só, com back-end, front-end e documentação juntos) é o que menos complica para um time de 5 pessoas em 3 meses: evita sincronizar múltiplos repositórios e mantém num só lugar o histórico de commits que a disciplina cobra.
+Um **monorepo único** (um repositório só, com back-end, front-end e documentação juntos) é a dexisão ideal para um time de 5 pessoas com 3 meses de desenvolvimento apenas. Evita sincronizar múltiplos repositórios e mantém num só lugar o histórico de commits que as disciplinas exigem.
 
 ```
 autosaller/
@@ -273,7 +274,7 @@ Cada módulo do `backend/modules` e do `frontend/views` espelha um bloco de requ
 
 ---
 
-## 🌿 Fluxo de trabalho no Git
+## 🌿 Fluxo de trabalho esperado no Git
 
 - `main` — sempre estável e implantável, só recebe merge via Pull Request.
 - `dev` — branch de integração; cada fatia é mesclada aqui antes de ir para `main`.
@@ -283,7 +284,7 @@ Cada módulo do `backend/modules` e do `frontend/views` espelha um bloco de requ
 
 ---
 
-## 🚨 Erros que reprovam o grupo
+## 🚨 Erros que reprovam o grupo!
 
 - **Dividir por camada em vez de por fatia** — um só no front, outro só no back, outro só no banco. Ninguém integra até a última semana, e nada encaixa.
 - **Sumir e reaparecer no fim** — o histórico do Git mostra tudo; commit em massa na véspera é evidência contra o grupo, não trabalho.
