@@ -10,7 +10,8 @@ export class CriarUsuarioDto {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(14)
+  @MinLength(11)
+  @MaxLength(11)
   cpf: string;
 
   @IsString()
@@ -21,7 +22,6 @@ export class CriarUsuarioDto {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(20)
   @IsIn(['admin', 'funcionario'])
   perfil: Perfil;
 }
