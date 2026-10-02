@@ -1,0 +1,48 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { CriarUsuarioDto } from './dto/criar-usuario.dto';
+import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { Usuario } from './usuario.entity';
+
+export type UsuarioAutenticado = Omit<Usuario, 'senha'>;
+
+@Injectable()
+export class UsuariosService {
+    constructor(@InjectRepository(Usuario) private readonly repository: Repository<Usuario>,) { }
+
+    listar() {
+        return this.repository.find({ order: { id_usuario: 'ASC' } });
+    }
+
+    async buscarPorId(id_usuario: number) {
+        const usuario = await this.repository.findOneBy({ id_usuario });
+        if (!usuario) {
+            throw new NotFoundException('Usuario não encontrado');
+        }
+        return usuario;
+    }
+
+    buscarParaLogin(cpf: string) {
+        return this.repository.findOne({
+            where: { cpf },
+            select: { id_usuario: true, cpf: true, senha: true, perfil: true, ativo: true },
+        });
+    }
+
+    async cadastrar(dto: CriarUsuarioDto) {
+        const senha = await bcrypt.hash(dto.senha, 10);
+        const usuario = this.repository.create({
+            nome: dto.nome,
+            cpf: dto.cpf,
+            senha: senha,
+            perfil: dto.perfil,
+            ativo: true,
+
+        });
+
+        const salvo = await this.repository.save(usuario);
+        const { senha: _senha, ...resposta } = salvo;
+        return resposta;
+    }
+}
