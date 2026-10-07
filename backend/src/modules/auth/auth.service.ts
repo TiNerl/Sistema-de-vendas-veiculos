@@ -26,7 +26,7 @@ export class AuthService {
   login(usuario: UsuarioAutenticado) {
     const payload = {
       sub: usuario.id_usuario,
-      email: usuario.cpf,
+      cpf: usuario.cpf,
       perfil: usuario.perfil,
     };
 

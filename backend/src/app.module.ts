@@ -1,24 +1,25 @@
 import { Module } from '@nestjs/common';
-import { createObserveModule } from '@nestjs/observe';
+//import { createObserveModule } from '@nestjs/observe';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ClientesModule } from './modules/clientes/clientes.module';
 
 
-export const { ObserveModule, ObserveInstrument } = createObserveModule();
+//export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
   imports: [
     // Distributed tracing, auto-correlated logs, request/job metrics, error
     // telemetry, alarms, and more — out of the box. Sign up at https://observe.nestjs.com
-    ObserveModule.forRoot({
-      appKey: 'YOUR_APP_KEY',
-      appSecret: 'YOUR_APP_SECRET',
-      serviceId: 'backend',
-    }),
+    // ObserveModule.forRoot({
+    //   appKey: 'YOUR_APP_KEY',
+    //   appSecret: 'YOUR_APP_SECRET',
+    //   serviceId: 'backend',
+    // }),
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
@@ -35,6 +36,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     }),
     UsuariosModule,
     AuthModule,
+    ClientesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
