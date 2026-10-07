@@ -22,6 +22,6 @@ export class CriarUsuarioDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsIn(['admin', 'funcionario'])
+  @IsIn(['admin', 'vendedor'])
   perfil: Perfil;
 }
