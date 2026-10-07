@@ -12,7 +12,7 @@ export class ClientesService {
 
         const cliente = await this.repository.findOneBy({ cpf: dto.cpf });
         if (cliente) {
-            throw new ConflictException('Cliente já cadastrado');
+            throw new ConflictException('O cliente informado já está cadastrado');
         }
 
         const novoCliente = this.repository.create({
