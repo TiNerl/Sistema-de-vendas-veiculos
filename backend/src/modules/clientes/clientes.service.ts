@@ -9,7 +9,6 @@ export class ClientesService {
     constructor(@InjectRepository(Cliente) private readonly repository: Repository<Cliente>) { }
 
     async cadastrar(dto: CriarClienteDto) {
-
         const cliente = await this.repository.findOneBy({ cpf: dto.cpf });
         if (cliente) {
             throw new ConflictException('O cliente informado já está cadastrado');
@@ -26,7 +25,18 @@ export class ClientesService {
             estado: dto.estado,
             documento: dto.documento,
             ativo: true
-    });
+        });
         return this.repository.save(novoCliente);
+    }
+
+    async inativar(id: number) {
+        const cliente = await this.repository.findOneBy({ id_cliente: id });
+
+        if (!cliente) {
+            throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
+        }
+
+        cliente.ativo = false;
+        return await this.repository.save(cliente);
     }
 }

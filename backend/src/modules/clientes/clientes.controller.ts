@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, ParseIntPipe, UseGuards, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, ParseIntPipe, UseGuards, Body } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -8,10 +8,18 @@ import { CriarClienteDto } from './dto/criar-cliente.dto';
 @Controller('clientes')
 export class ClientesController {
     constructor(private readonly clientesService: ClientesService) { }
+
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin', 'vendedor')
     @Post()
     cadastrar(@Body() dto: CriarClienteDto) {
         return this.clientesService.cadastrar(dto);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin', 'vendedor')
+    @Patch(':id/inativar')
+    inativar(@Param('id', ParseIntPipe) id: number) {
+        return this.clientesService.inativar(id);
     }
 }
