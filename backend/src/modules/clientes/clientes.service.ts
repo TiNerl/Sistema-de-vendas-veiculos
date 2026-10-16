@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { Cliente } from './cliente.entity';
 import { CriarClienteDto } from './dto/criar-cliente.dto';
 
@@ -38,5 +38,20 @@ export class ClientesService {
 
         cliente.ativo = false;
         return await this.repository.save(cliente);
+    async findAll(busca?: string): Promise<Cliente[]> {
+        if (!busca || busca.trim() === '') {
+            return this.repository.find({ order: { nome: 'ASC' } });
+        }
+
+        const termo = `%${busca}%`;
+
+        return this.repository.find({
+            where: [
+                { nome: Like(termo) },
+                { cpf: Like(termo) },
+                { email: Like(termo) },
+            ],
+            order: { nome: 'ASC' },
+        });
     }
 }

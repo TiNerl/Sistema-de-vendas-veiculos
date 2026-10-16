@@ -21,5 +21,8 @@ export class ClientesController {
     @Patch(':id/inativar')
     inativar(@Param('id', ParseIntPipe) id: number) {
         return this.clientesService.inativar(id);
+    @Get()
+    findAll(@Query('busca') busca?: string) {
+        return this.clientesService.findAll(busca);
     }
 }
