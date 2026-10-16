@@ -38,8 +38,10 @@ export class ClientesService {
 
         cliente.ativo = false;
         return await this.repository.save(cliente);
-    async findAll(busca?: string): Promise<Cliente[]> {
-        if (!busca || busca.trim() === '') {
+}
+
+    async findAll(busca ?: string): Promise < Cliente[] > {
+            if(!busca || busca.trim() === '') {
             return this.repository.find({ order: { nome: 'ASC' } });
         }
 
