@@ -6,6 +6,7 @@ type Usuario = {
 }
 
 type Veiculo = {
+  id_veiculo?: number
   marca: string
   modelo: string
   versao: string
@@ -18,6 +19,8 @@ type Veiculo = {
   chassi: string
   renavam: string
   preco: number
+  data_criacao?: string
+  atualizado_em?: string
 }
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
@@ -26,6 +29,10 @@ const senha = ref('')
 const token = ref('')
 const carregandoLogin = ref(false)
 const salvandoVeiculo = ref(false)
+const carregandoEstoque = ref(false)
+const veiculos = ref<Veiculo[]>([])
+const veiculoSelecionado = ref<Veiculo | null>(null)
+const editando = ref(false)
 const mensagem = ref('')
 const tipoMensagem = ref<'sucesso' | 'erro'>('sucesso')
 
@@ -85,6 +92,7 @@ async function entrar() {
 
     token.value = sessao.accessToken
     senha.value = ''
+    await carregarEstoque()
   } catch (erro) {
     mensagem.value = erro instanceof Error ? erro.message : 'Não foi possível entrar.'
     tipoMensagem.value = 'erro'
@@ -93,51 +101,138 @@ async function entrar() {
   }
 }
 
-async function cadastrarVeiculo() {
+async function carregarEstoque() {
+  carregandoEstoque.value = true
+
+  try {
+    veiculos.value = await requisitar<Veiculo[]>('/veiculos', {
+      headers: { Authorization: `Bearer ${token.value}` },
+    })
+  } catch (erro) {
+    mensagem.value = erro instanceof Error ? erro.message : 'Não foi possível consultar o estoque.'
+    tipoMensagem.value = 'erro'
+  } finally {
+    carregandoEstoque.value = false
+  }
+}
+
+async function consultarVeiculo(veiculo: Veiculo) {
+  mensagem.value = ''
+  if (editando.value) limparFormulario()
+  editando.value = false
+
+  try {
+    veiculoSelecionado.value = await requisitar<Veiculo>(`/veiculos/${veiculo.id_veiculo}`, {
+      headers: { Authorization: `Bearer ${token.value}` },
+    })
+  } catch (erro) {
+    mensagem.value = erro instanceof Error ? erro.message : 'Não foi possível consultar o veículo.'
+    tipoMensagem.value = 'erro'
+  }
+}
+
+function editarVeiculo() {
+  if (!veiculoSelecionado.value) return
+  Object.assign(veiculo, {
+    marca: veiculoSelecionado.value.marca,
+    modelo: veiculoSelecionado.value.modelo,
+    versao: veiculoSelecionado.value.versao,
+    ano: veiculoSelecionado.value.ano,
+    cor: veiculoSelecionado.value.cor,
+    quilometragem: veiculoSelecionado.value.quilometragem,
+    combustivel: veiculoSelecionado.value.combustivel,
+    cambio: veiculoSelecionado.value.cambio,
+    placa: veiculoSelecionado.value.placa,
+    chassi: veiculoSelecionado.value.chassi,
+    renavam: veiculoSelecionado.value.renavam,
+    preco: Number(veiculoSelecionado.value.preco),
+  })
+  editando.value = true
+  mensagem.value = ''
+}
+
+function limparFormulario() {
+  Object.assign(veiculo, {
+    marca: '',
+    modelo: '',
+    versao: '',
+    ano: new Date().getFullYear(),
+    cor: '',
+    quilometragem: 0,
+    combustivel: '',
+    cambio: '',
+    placa: '',
+    chassi: '',
+    renavam: '',
+    preco: 0,
+  })
+}
+
+async function salvarVeiculo() {
   salvandoVeiculo.value = true
   mensagem.value = ''
 
   try {
-    await requisitar<Veiculo>('/veiculos', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token.value}`,
+    const atualizado = await requisitar<Veiculo>(
+      editando.value ? `/veiculos/${veiculoSelecionado.value?.id_veiculo}` : '/veiculos',
+      {
+        method: editando.value ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token.value}`,
+        },
+        body: JSON.stringify({
+          marca: veiculo.marca,
+          modelo: veiculo.modelo,
+          versao: veiculo.versao,
+          ano: veiculo.ano,
+          cor: veiculo.cor,
+          quilometragem: veiculo.quilometragem,
+          combustivel: veiculo.combustivel,
+          cambio: veiculo.cambio,
+          placa: veiculo.placa.replace(/-/g, '').toUpperCase(),
+          chassi: veiculo.chassi.toUpperCase(),
+          renavam: veiculo.renavam,
+          preco: Number(veiculo.preco),
+        }),
       },
-      body: JSON.stringify({
-        ...veiculo,
-        placa: veiculo.placa.replace(/-/g, '').toUpperCase(),
-        chassi: veiculo.chassi.toUpperCase(),
-      }),
-    })
+    )
 
-    Object.assign(veiculo, {
-      marca: '',
-      modelo: '',
-      versao: '',
-      ano: new Date().getFullYear(),
-      cor: '',
-      quilometragem: 0,
-      combustivel: '',
-      cambio: '',
-      placa: '',
-      chassi: '',
-      renavam: '',
-      preco: 0,
-    })
-    mensagem.value = 'Veículo cadastrado com sucesso.'
+    await carregarEstoque()
+    if (editando.value) await consultarVeiculo(atualizado)
+    else limparFormulario()
+    mensagem.value = editando.value ? 'Veículo atualizado com sucesso.' : 'Veículo cadastrado com sucesso.'
     tipoMensagem.value = 'sucesso'
+    editando.value = false
   } catch (erro) {
-    mensagem.value = erro instanceof Error ? erro.message : 'Não foi possível cadastrar o veículo.'
+    mensagem.value = erro instanceof Error ? erro.message : 'Não foi possível salvar o veículo.'
     tipoMensagem.value = 'erro'
   } finally {
     salvandoVeiculo.value = false
   }
 }
 
+function cancelarEdicao() {
+  editando.value = false
+  limparFormulario()
+}
+
+function formatarPreco(preco: number | string) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(preco))
+}
+
+function formatarData(data?: string) {
+  if (!data) return 'Não disponível'
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(data))
+}
+
 function sair() {
   token.value = ''
   cpf.value = ''
+  veiculos.value = []
+  veiculoSelecionado.value = null
+  editando.value = false
+  limparFormulario()
   mensagem.value = ''
 }
 </script>
@@ -155,7 +250,7 @@ function sair() {
     <section v-if="!token" class="cartao cartao-login">
       <p class="sobretitulo">ACESSO RESTRITO</p>
       <h1>Entrar como administrador</h1>
-      <p class="descricao">Faça login para cadastrar veículos no estoque.</p>
+      <p class="descricao">Faça login para consultar e editar o estoque de veículos.</p>
 
       <form class="formulario" @submit.prevent="entrar">
         <label for="cpf">CPF</label>
@@ -192,8 +287,8 @@ function sair() {
       <div class="titulo-linha">
         <div>
           <p class="sobretitulo">ESTOQUE</p>
-          <h1>Cadastrar veículo</h1>
-          <p class="descricao">Informe os dados do veículo para adicioná-lo ao estoque.</p>
+          <h1>Gestão de estoque</h1>
+          <p class="descricao">Consulte os veículos cadastrados ou mantenha seus dados atualizados.</p>
         </div>
         <button class="botao-sair" type="button" @click="sair">Sair</button>
       </div>
@@ -207,7 +302,13 @@ function sair() {
         {{ mensagem }}
       </p>
 
-      <form class="formulario grade-formulario" @submit.prevent="cadastrarVeiculo">
+      <form class="formulario grade-formulario" @submit.prevent="salvarVeiculo">
+        <div class="cabecalho-formulario">
+          <h2>{{ editando ? 'Editar veículo' : 'Cadastrar veículo' }}</h2>
+          <button v-if="editando" class="botao-secundario" type="button" @click="cancelarEdicao">
+            Cancelar edição
+          </button>
+        </div>
         <div class="campo">
           <label for="marca">Marca</label>
           <input id="marca" v-model.trim="veiculo.marca" name="marca" maxlength="100" required />
@@ -319,10 +420,66 @@ function sair() {
 
         <div class="acoes-formulario">
           <button class="botao-principal" type="submit" :disabled="salvandoVeiculo">
-            {{ salvandoVeiculo ? 'Salvando...' : 'Cadastrar veículo' }}
+            {{ salvandoVeiculo ? 'Salvando...' : editando ? 'Salvar alterações' : 'Cadastrar veículo' }}
           </button>
         </div>
       </form>
+
+      <section class="estoque" aria-labelledby="titulo-estoque">
+        <div class="cabecalho-estoque">
+          <div>
+            <p class="sobretitulo">VEÍCULOS CADASTRADOS</p>
+            <h2 id="titulo-estoque">Estoque <span class="contador">{{ veiculos.length }}</span></h2>
+          </div>
+          <button class="botao-secundario" type="button" :disabled="carregandoEstoque" @click="carregarEstoque">
+            {{ carregandoEstoque ? 'Atualizando...' : 'Atualizar lista' }}
+          </button>
+        </div>
+
+        <p v-if="!carregandoEstoque && veiculos.length === 0" class="estado-vazio">
+          Nenhum veículo cadastrado no estoque.
+        </p>
+        <div v-else class="lista-estoque">
+          <button
+            v-for="item in veiculos"
+            :key="item.id_veiculo"
+            class="item-estoque"
+            :class="{ selecionado: veiculoSelecionado?.id_veiculo === item.id_veiculo }"
+            type="button"
+            @click="consultarVeiculo(item)"
+          >
+            <span class="item-principal">{{ item.marca }} {{ item.modelo }}</span>
+            <span class="item-secundario">{{ item.versao }} · {{ item.ano }} · {{ item.placa }}</span>
+            <span class="item-preco">{{ formatarPreco(item.preco) }}</span>
+          </button>
+        </div>
+
+        <article v-if="veiculoSelecionado" class="detalhe-veiculo" aria-labelledby="titulo-detalhe">
+          <div class="cabecalho-detalhe">
+            <div>
+              <p class="sobretitulo">DETALHES DO VEÍCULO #{{ veiculoSelecionado.id_veiculo }}</p>
+              <h2 id="titulo-detalhe">{{ veiculoSelecionado.marca }} {{ veiculoSelecionado.modelo }}</h2>
+            </div>
+            <button class="botao-principal botao-editar" type="button" @click="editarVeiculo">
+              Editar dados
+            </button>
+          </div>
+          <dl class="grade-detalhes">
+            <div><dt>Versão</dt><dd>{{ veiculoSelecionado.versao }}</dd></div>
+            <div><dt>Ano</dt><dd>{{ veiculoSelecionado.ano }}</dd></div>
+            <div><dt>Cor</dt><dd>{{ veiculoSelecionado.cor }}</dd></div>
+            <div><dt>Quilometragem</dt><dd>{{ veiculoSelecionado.quilometragem.toLocaleString('pt-BR') }} km</dd></div>
+            <div><dt>Combustível</dt><dd>{{ veiculoSelecionado.combustivel }}</dd></div>
+            <div><dt>Câmbio</dt><dd>{{ veiculoSelecionado.cambio }}</dd></div>
+            <div><dt>Placa</dt><dd>{{ veiculoSelecionado.placa }}</dd></div>
+            <div><dt>Chassi</dt><dd>{{ veiculoSelecionado.chassi }}</dd></div>
+            <div><dt>RENAVAM</dt><dd>{{ veiculoSelecionado.renavam }}</dd></div>
+            <div><dt>Preço</dt><dd>{{ formatarPreco(veiculoSelecionado.preco) }}</dd></div>
+            <div><dt>Cadastrado em</dt><dd>{{ formatarData(veiculoSelecionado.data_criacao) }}</dd></div>
+            <div><dt>Última atualização</dt><dd>{{ formatarData(veiculoSelecionado.atualizado_em) }}</dd></div>
+          </dl>
+        </article>
+      </section>
     </section>
   </main>
 </template>

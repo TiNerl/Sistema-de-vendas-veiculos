@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
@@ -26,6 +26,7 @@ describe('VeiculosService', () => {
 
     const repository = {
         findOne: vi.fn(),
+        find: vi.fn(),
         create: vi.fn(),
         save: vi.fn(),
     };
@@ -65,6 +66,51 @@ describe('VeiculosService', () => {
         repository.findOne.mockResolvedValue({ id_veiculo: 1 });
 
         await expect(service.cadastrar(dto)).rejects.toBeInstanceOf(ConflictException);
+        expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('lista os veículos mais recentes primeiro', async () => {
+        repository.find.mockResolvedValue([{ id_veiculo: 2 }, { id_veiculo: 1 }]);
+
+        await expect(service.listar()).resolves.toEqual([
+            { id_veiculo: 2 },
+            { id_veiculo: 1 },
+        ]);
+        expect(repository.find).toHaveBeenCalledWith({ order: { id_veiculo: 'DESC' } });
+    });
+
+    it('consulta um veículo pelo id e retorna 404 quando não existe', async () => {
+        repository.findOne.mockResolvedValueOnce({ id_veiculo: 1 });
+        await expect(service.buscarPorId(1)).resolves.toEqual({ id_veiculo: 1 });
+
+        repository.findOne.mockResolvedValueOnce(null);
+        await expect(service.buscarPorId(99)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('atualiza o veículo mantendo seus identificadores únicos', async () => {
+        const existente = { id_veiculo: 1, ...dto, preco: '100.00' };
+        repository.findOne.mockResolvedValueOnce(existente).mockResolvedValueOnce(null);
+
+        await expect(service.atualizar(1, { ...dto, preco: 150000 })).resolves.toMatchObject({
+            ...dto,
+            preco: '150000.00',
+        });
+        expect(repository.findOne).toHaveBeenLastCalledWith({
+            where: [
+                { placa: dto.placa, id_veiculo: expect.anything() },
+                { chassi: dto.chassi, id_veiculo: expect.anything() },
+                { renavam: dto.renavam, id_veiculo: expect.anything() },
+            ],
+        });
+        expect(repository.save).toHaveBeenCalledOnce();
+    });
+
+    it('não atualiza quando os identificadores pertencem a outro veículo', async () => {
+        repository.findOne
+            .mockResolvedValueOnce({ id_veiculo: 1, ...dto })
+            .mockResolvedValueOnce({ id_veiculo: 2 });
+
+        await expect(service.atualizar(1, dto)).rejects.toBeInstanceOf(ConflictException);
         expect(repository.save).not.toHaveBeenCalled();
     });
 
