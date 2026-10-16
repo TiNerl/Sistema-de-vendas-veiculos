@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Param, ParseIntPipe, UseGuards, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, ParseIntPipe, UseGuards, Body } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -18,6 +18,9 @@ export class ClientesController {
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin', 'vendedor')
+    @Patch(':id/inativar')
+    inativar(@Param('id', ParseIntPipe) id: number) {
+        return this.clientesService.inativar(id);
     @Get()
     findAll(@Query('busca') busca?: string) {
         return this.clientesService.findAll(busca);
