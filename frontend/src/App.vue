@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 
+type StatusVeiculo = 'disponivel' | 'reservado' | 'vendido' | 'em_manutencao'
+
 type Usuario = {
   perfil: string
 }
@@ -19,6 +21,7 @@ type Veiculo = {
   chassi: string
   renavam: string
   preco: number
+  status: StatusVeiculo
   data_criacao?: string
   atualizado_em?: string
 }
@@ -30,8 +33,10 @@ const token = ref('')
 const carregandoLogin = ref(false)
 const salvandoVeiculo = ref(false)
 const carregandoEstoque = ref(false)
+const salvandoStatus = ref(false)
 const veiculos = ref<Veiculo[]>([])
 const veiculoSelecionado = ref<Veiculo | null>(null)
+const statusEmEdicao = ref<StatusVeiculo>('disponivel')
 const editando = ref(false)
 const mensagem = ref('')
 const tipoMensagem = ref<'sucesso' | 'erro'>('sucesso')
@@ -49,7 +54,15 @@ const veiculo = reactive<Veiculo>({
   chassi: '',
   renavam: '',
   preco: 0,
+  status: 'disponivel',
 })
+
+const opcoesStatus: { valor: StatusVeiculo; rotulo: string }[] = [
+  { valor: 'disponivel', rotulo: 'Disponível' },
+  { valor: 'reservado', rotulo: 'Reservado' },
+  { valor: 'vendido', rotulo: 'Vendido' },
+  { valor: 'em_manutencao', rotulo: 'Em Manutenção' },
+]
 
 function mensagemDeErro(dados: unknown, fallback: string) {
   if (typeof dados === 'object' && dados !== null && 'message' in dados) {
@@ -125,9 +138,44 @@ async function consultarVeiculo(veiculo: Veiculo) {
     veiculoSelecionado.value = await requisitar<Veiculo>(`/veiculos/${veiculo.id_veiculo}`, {
       headers: { Authorization: `Bearer ${token.value}` },
     })
+    statusEmEdicao.value = veiculoSelecionado.value.status
   } catch (erro) {
     mensagem.value = erro instanceof Error ? erro.message : 'Não foi possível consultar o veículo.'
     tipoMensagem.value = 'erro'
+  }
+}
+
+async function salvarStatus() {
+  if (!veiculoSelecionado.value?.id_veiculo) return
+
+  salvandoStatus.value = true
+  mensagem.value = ''
+
+  try {
+    const atualizado = await requisitar<Veiculo>(
+      `/veiculos/${veiculoSelecionado.value.id_veiculo}/status`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token.value}`,
+        },
+        body: JSON.stringify({ status: statusEmEdicao.value }),
+      },
+    )
+
+    veiculoSelecionado.value = atualizado
+    statusEmEdicao.value = atualizado.status
+    veiculos.value = veiculos.value.map((item) =>
+      item.id_veiculo === atualizado.id_veiculo ? { ...item, status: atualizado.status } : item,
+    )
+    mensagem.value = 'Status do veículo atualizado.'
+    tipoMensagem.value = 'sucesso'
+  } catch (erro) {
+    mensagem.value = erro instanceof Error ? erro.message : 'Não foi possível atualizar o status.'
+    tipoMensagem.value = 'erro'
+  } finally {
+    salvandoStatus.value = false
   }
 }
 
@@ -165,6 +213,7 @@ function limparFormulario() {
     chassi: '',
     renavam: '',
     preco: 0,
+    status: 'disponivel',
   })
 }
 
@@ -450,7 +499,12 @@ function sair() {
           >
             <span class="item-principal">{{ item.marca }} {{ item.modelo }}</span>
             <span class="item-secundario">{{ item.versao }} · {{ item.ano }} · {{ item.placa }}</span>
-            <span class="item-preco">{{ formatarPreco(item.preco) }}</span>
+            <span class="linha-item-estoque">
+              <span class="item-preco">{{ formatarPreco(item.preco) }}</span>
+              <span class="status-badge" :class="`status-${item.status}`">{{
+                opcoesStatus.find((opcao) => opcao.valor === item.status)?.rotulo ?? item.status
+              }}</span>
+            </span>
           </button>
         </div>
 
@@ -463,6 +517,30 @@ function sair() {
             <button class="botao-principal botao-editar" type="button" @click="editarVeiculo">
               Editar dados
             </button>
+          </div>
+          <div class="controle-status">
+            <div>
+              <p class="sobretitulo">STATUS ATUAL</p>
+              <span class="status-badge" :class="`status-${veiculoSelecionado.status}`">{{
+                opcoesStatus.find((opcao) => opcao.valor === veiculoSelecionado?.status)?.rotulo ??
+                veiculoSelecionado?.status
+              }}</span>
+            </div>
+            <form class="formulario-status" @submit.prevent="salvarStatus">
+              <label for="status-veiculo">Alterar status</label>
+              <select id="status-veiculo" v-model="statusEmEdicao">
+                <option v-for="opcao in opcoesStatus" :key="opcao.valor" :value="opcao.valor">
+                  {{ opcao.rotulo }}
+                </option>
+              </select>
+              <button
+                class="botao-secundario"
+                type="submit"
+                :disabled="salvandoStatus || statusEmEdicao === veiculoSelecionado.status"
+              >
+                {{ salvandoStatus ? 'Salvando...' : 'Atualizar status' }}
+              </button>
+            </form>
           </div>
           <dl class="grade-detalhes">
             <div><dt>Versão</dt><dd>{{ veiculoSelecionado.versao }}</dd></div>
@@ -483,3 +561,5 @@ function sair() {
     </section>
   </main>
 </template>
+
+

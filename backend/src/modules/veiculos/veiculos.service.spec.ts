@@ -4,9 +4,11 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { Repository } from 'typeorm';
+import { AtualizarStatusVeiculoDto } from './dto/atualizar-status-veiculo.dto';
 import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
 import { Veiculo } from './veiculo.entity';
 import { VeiculosService } from './veiculos.service';
+import { StatusVeiculo } from './veiculo-status.enum';
 
 describe('VeiculosService', () => {
     const dto: CriarVeiculoDto = {
@@ -55,6 +57,7 @@ describe('VeiculosService', () => {
         await expect(service.cadastrar(dto)).resolves.toMatchObject({
             ...dto,
             preco: '145000.00',
+            status: StatusVeiculo.DISPONIVEL,
         });
         expect(repository.findOne).toHaveBeenCalledWith({
             where: [{ placa: dto.placa }, { chassi: dto.chassi }, { renavam: dto.renavam }],
@@ -112,6 +115,26 @@ describe('VeiculosService', () => {
 
         await expect(service.atualizar(1, dto)).rejects.toBeInstanceOf(ConflictException);
         expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('altera o status do veículo', async () => {
+        const veiculo = { id_veiculo: 1, status: StatusVeiculo.DISPONIVEL };
+        repository.findOne.mockResolvedValueOnce(veiculo);
+
+        await expect(service.atualizarStatus(1, StatusVeiculo.RESERVADO)).resolves.toMatchObject({
+            status: StatusVeiculo.RESERVADO,
+        });
+        expect(repository.save).toHaveBeenCalledWith(veiculo);
+    });
+
+    it('rejeita status de veículo inválido', async () => {
+        for (const status of Object.values(StatusVeiculo)) {
+            const dtoValido = plainToInstance(AtualizarStatusVeiculoDto, { status });
+            await expect(validate(dtoValido)).resolves.toHaveLength(0);
+        }
+
+        const dtoInvalido = plainToInstance(AtualizarStatusVeiculoDto, { status: 'inativo' });
+        await expect(validate(dtoInvalido)).resolves.toHaveLength(1);
     });
 
     it('normaliza placa e chassi e valida os dados obrigatórios', async () => {

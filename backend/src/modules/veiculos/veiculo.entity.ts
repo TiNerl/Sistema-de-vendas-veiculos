@@ -5,6 +5,7 @@ import {
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
+import { StatusVeiculo } from './veiculo-status.enum';
 
 @Entity({ name: 'veiculos' })
 export class Veiculo {
@@ -46,6 +47,9 @@ export class Veiculo {
 
     @Column({ type: 'numeric', precision: 12, scale: 2 })
     preco: string;
+
+    @Column({ type: 'varchar', length: 20, default: StatusVeiculo.DISPONIVEL })
+    status: StatusVeiculo;
 
     @CreateDateColumn({ name: 'data_criacao', type: 'timestamptz' })
     data_criacao: Date;

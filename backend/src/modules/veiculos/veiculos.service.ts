@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
 import { Veiculo } from './veiculo.entity';
+import { StatusVeiculo } from './veiculo-status.enum';
 
 @Injectable()
 export class VeiculosService {
@@ -27,6 +28,7 @@ export class VeiculosService {
         const veiculo = this.repository.create({
             ...dto,
             preco: dto.preco.toFixed(2),
+            status: StatusVeiculo.DISPONIVEL,
         });
 
         return this.repository.save(veiculo);
@@ -61,6 +63,12 @@ export class VeiculosService {
         }
 
         Object.assign(veiculo, { ...dto, preco: dto.preco.toFixed(2) });
+        return this.repository.save(veiculo);
+    }
+
+    async atualizarStatus(id: number, status: StatusVeiculo) {
+        const veiculo = await this.buscarPorId(id);
+        veiculo.status = status;
         return this.repository.save(veiculo);
     }
 }
