@@ -1,53 +1,39 @@
-import { IsString, IsNotEmpty, IsEmail, MinLength, MaxLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CriarClienteDto {
+  @IsNotEmpty({ message: 'O nome é obrigatório' })
   @IsString()
-  @IsNotEmpty()
-  @MinLength(2)
-  @MaxLength(150)
   nome: string;
 
+  @IsNotEmpty({ message: 'O CPF é obrigatório' })
   @IsString()
-  @IsNotEmpty()
-  @MinLength(11)
-  @MaxLength(11)
   cpf: string;
 
-  @IsEmail()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'O e-mail é obrigatório' })
+  @IsEmail({}, { message: 'Formato de e-mail inválido' })
   email: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @MinLength(10)
-  @MaxLength(11)
-  telefone: string;
+  telefone?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @MinLength(8)
-  @MaxLength(8)
-  cep: string;
+  cep?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(200)
-  endereco: string;
+  endereco?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  cidade: string;
+  cidade?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @MinLength(2)
-  @MaxLength(2)
-  estado: string;
+  estado?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  @MaxLength(14)
-  documento: string;
+  documento?: string;
 }
