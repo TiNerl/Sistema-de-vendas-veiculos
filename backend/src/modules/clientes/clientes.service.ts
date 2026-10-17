@@ -10,9 +10,20 @@ export class ClientesService {
     constructor(@InjectRepository(Cliente) private readonly repository: Repository<Cliente>) { }
 
     async cadastrar(dto: CriarClienteDto) {
-        const cliente = await this.repository.findOneBy({ cpf: dto.cpf });
-        if (cliente) {
-            throw new ConflictException('O cliente informado já está cadastrado');
+        const clienteExistente = await this.repository.findOne({
+            where: [
+                { cpf: dto.cpf },
+                { email: dto.email }
+            ]
+        });
+
+        if (clienteExistente) {
+            if (clienteExistente.cpf === dto.cpf) {
+                throw new ConflictException('Já existe um cliente cadastrado com este CPF');
+            }
+            if (clienteExistente.email === dto.email) {
+                throw new ConflictException('Já existe um cliente cadastrado com este e-mail');
+            }
         }
 
         const novoCliente = this.repository.create({
@@ -27,7 +38,8 @@ export class ClientesService {
             documento: dto.documento,
             ativo: true
         });
-        return this.repository.save(novoCliente);
+
+        return await this.repository.save(novoCliente);
     }
 
     async inativar(id: number) {
