@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Cliente } from './cliente.entity';
 import { CriarClienteDto } from './dto/criar-cliente.dto';
+import { AtualizarClienteDto } from './dto/atualizar-cliente.dto';
 
 @Injectable()
 export class ClientesService {
@@ -38,10 +39,10 @@ export class ClientesService {
 
         cliente.ativo = false;
         return await this.repository.save(cliente);
-}
+    }
 
-    async findAll(busca ?: string): Promise < Cliente[] > {
-            if(!busca || busca.trim() === '') {
+    async findAll(busca?: string): Promise<Cliente[]> {
+        if (!busca || busca.trim() === '') {
             return this.repository.find({ order: { nome: 'ASC' } });
         }
 
@@ -55,5 +56,16 @@ export class ClientesService {
             ],
             order: { nome: 'ASC' },
         });
+    }
+
+    async atualizar(id: number, dto: AtualizarClienteDto) {
+        const cliente = await this.repository.findOneBy({ id_cliente: id });
+
+        if (!cliente) {
+            throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
+        }
+
+        Object.assign(cliente, dto);
+        return await this.repository.save(cliente);
     }
 }
