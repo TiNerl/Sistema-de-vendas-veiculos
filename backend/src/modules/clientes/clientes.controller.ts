@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Patch, Param, ParseIntPipe, UseGuards, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Param, ParseIntPipe, UseGuards, Body, Query } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { ClientesService } from './clientes.service';
 import { CriarClienteDto } from './dto/criar-cliente.dto';
+import { AtualizarClienteDto } from './dto/atualizar-cliente.dto';
 
 @Controller('clientes')
 export class ClientesController {
@@ -26,5 +27,12 @@ export class ClientesController {
     @Get()
     findAll(@Query('busca') busca?: string) {
         return this.clientesService.findAll(busca);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin', 'vendedor')
+    @Put(':id')
+    atualizar(@Param('id', ParseIntPipe) id: number, @Body() dto: AtualizarClienteDto) {
+        return this.clientesService.atualizar(id, dto);
     }
 }
