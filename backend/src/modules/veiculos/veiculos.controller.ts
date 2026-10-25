@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, ParseIntPipe, Post, Patch, UseGuards } fr
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { AtualizarStatusVeiculoDto } from './dto/atualizar-status-veiculo.dto';
 import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
 import { VeiculosService } from './veiculos.service';
 import { AtualizarVeiculoDto } from './dto/atualizar-veiculo.dto';
@@ -36,5 +37,15 @@ export class VeiculosController {
     @Patch(':id')
     atualizar(@Param('id', ParseIntPipe) id: number, @Body() dto: AtualizarVeiculoDto) {
         return this.veiculosService.atualizar(id, dto);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
+    @Patch(':id/status')
+    atualizarStatus(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: AtualizarStatusVeiculoDto,
+    ) {
+        return this.veiculosService.atualizarStatus(id, dto.status);
     }
 }
