@@ -53,6 +53,10 @@ Centralizar em uma aplicação web o processo de venda de veículos de uma conce
 
 **Stack:** NestJS + PostgreSQL (back-end) · VueJS + TypeScript (front-end)
 
+### Cadastro de veículos
+
+O cadastro de veículos está disponível para administradores na interface web. Após entrar com CPF e senha, o administrador informa marca, modelo, versão, ano, cor, quilometragem, combustível, câmbio, placa, chassi, RENAVAM e preço. A API recebe o cadastro em `POST /veiculos` com token Bearer de administrador e valida os dados, impedindo a repetição de placa, chassi ou RENAVAM.
+
 **Documentos-base do projeto:**
 
 | Documento | Onde está | Situação |
