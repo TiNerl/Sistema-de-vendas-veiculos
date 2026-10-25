@@ -11,13 +11,15 @@ import { InativarUsuarioDto } from './dto/inativar-usuario.dto';
 export class UsuariosController {
     constructor(private readonly usuariosService: UsuariosService) { }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
     @Get()
     listar() {
         return this.usuariosService.listar();
     }
     
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
     @Get(':id')
     buscarPorId(@Param('id', ParseIntPipe) id: number) {
         return this.usuariosService.buscarPorId(id);
