@@ -1,21 +1,32 @@
-import { requisitar } from './api'
 
-export type Usuario = {
-    perfil: string
+import { api } from './api'
+
+export interface CredenciaisLogin {
+  cpf: string
+  senha: string
 }
 
-type RespostaLogin = {
-    accessToken: string
+export interface RespostaLogin {
+  accessToken: string
 }
 
-export function fazerLogin(cpf: string, senha: string): Promise<RespostaLogin> {
-    return requisitar<RespostaLogin>('/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cpf, senha }),
-    })
+export type PerfilUsuario = 'admin' | 'vendedor'
+
+export interface UsuarioAutenticado {
+  id: number
+  cpf: string
+  perfil: PerfilUsuario
 }
 
-export function consultarPerfil(token: string): Promise<Usuario> {
-    return requisitar<Usuario>('/auth/perfil', {}, token)
+export async function login(
+  credenciais: CredenciaisLogin,
+): Promise<RespostaLogin> {
+  const resposta = await api.post<RespostaLogin>('/auth/login', credenciais)
+
+  return resposta.data
+}
+
+export async function obterPerfil(): Promise<UsuarioAutenticado> {
+  const resposta = await api.get<UsuarioAutenticado>('/auth/perfil')
+  return resposta.data
 }

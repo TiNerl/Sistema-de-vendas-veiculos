@@ -4,13 +4,14 @@ import { Not, Repository } from 'typeorm';
 import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
 import { Veiculo } from './veiculo.entity';
 import { StatusVeiculo } from './veiculo-status.enum';
+import { AtualizarVeiculoDto } from './dto/atualizar-veiculo.dto';
 
 @Injectable()
 export class VeiculosService {
     constructor(
         @InjectRepository(Veiculo)
         private readonly repository: Repository<Veiculo>,
-    ) {}
+    ) { }
 
     async cadastrar(dto: CriarVeiculoDto) {
         const existente = await this.repository.findOne({
@@ -48,21 +49,40 @@ export class VeiculosService {
         return veiculo;
     }
 
-    async atualizar(id: number, dto: CriarVeiculoDto) {
-        const veiculo = await this.buscarPorId(id);
-        const existente = await this.repository.findOne({
-            where: [
-                { placa: dto.placa, id_veiculo: Not(id) },
-                { chassi: dto.chassi, id_veiculo: Not(id) },
-                { renavam: dto.renavam, id_veiculo: Not(id) },
-            ],
+    async atualizar(id: number, dto: AtualizarVeiculoDto) {
+        const veiculo = await this.repository.findOneBy({
+            id_veiculo: id,
         });
 
-        if (existente) {
-            throw new ConflictException('Placa, chassi ou RENAVAM já cadastrado');
+        if (!veiculo) {
+            throw new NotFoundException(
+                `Veículo com ID ${id} não encontrado`,
+            );
         }
 
-        Object.assign(veiculo, { ...dto, preco: dto.preco.toFixed(2) });
+        const condicoes = [
+            ...(dto.placa !== undefined ? [{ placa: dto.placa }] : []),
+            ...(dto.chassi !== undefined ? [{ chassi: dto.chassi }] : []),
+            ...(dto.renavam !== undefined ? [{ renavam: dto.renavam }] : []),
+        ].map(condicao => ({ ...condicao, id_veiculo: Not(id) }));
+
+        if (condicoes.length > 0) {
+            const existente = await this.repository.findOne({
+                where: condicoes,
+            });
+
+            if (existente) {
+                throw new ConflictException('Placa, chassi ou RENAVAM já cadastrado');
+            }
+        }
+
+        Object.assign(veiculo, {
+            ...dto,
+            ...(dto.preco !== undefined && {
+                preco: dto.preco.toFixed(2),
+            }),
+        });
+
         return this.repository.save(veiculo);
     }
 

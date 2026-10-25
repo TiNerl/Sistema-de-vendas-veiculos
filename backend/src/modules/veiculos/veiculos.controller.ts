@@ -1,20 +1,11 @@
-import {
-    Body,
-    Controller,
-    Get,
-    Param,
-    ParseIntPipe,
-    Patch,
-    Post,
-    Put,
-    UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Patch, UseGuards } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AtualizarStatusVeiculoDto } from './dto/atualizar-status-veiculo.dto';
 import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
 import { VeiculosService } from './veiculos.service';
+import { AtualizarVeiculoDto } from './dto/atualizar-veiculo.dto';
 
 @Controller('veiculos')
 export class VeiculosController {
@@ -43,8 +34,8 @@ export class VeiculosController {
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
-    @Put(':id')
-    atualizar(@Param('id', ParseIntPipe) id: number, @Body() dto: CriarVeiculoDto) {
+    @Patch(':id')
+    atualizar(@Param('id', ParseIntPipe) id: number, @Body() dto: AtualizarVeiculoDto) {
         return this.veiculosService.atualizar(id, dto);
     }
 
