@@ -1,6 +1,6 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
 import { Veiculo } from './veiculo.entity';
 
@@ -29,6 +29,38 @@ export class VeiculosService {
             preco: dto.preco.toFixed(2),
         });
 
+        return this.repository.save(veiculo);
+    }
+
+    listar() {
+        return this.repository.find({ order: { id_veiculo: 'DESC' } });
+    }
+
+    async buscarPorId(id: number) {
+        const veiculo = await this.repository.findOne({ where: { id_veiculo: id } });
+
+        if (!veiculo) {
+            throw new NotFoundException('Veículo não encontrado');
+        }
+
+        return veiculo;
+    }
+
+    async atualizar(id: number, dto: CriarVeiculoDto) {
+        const veiculo = await this.buscarPorId(id);
+        const existente = await this.repository.findOne({
+            where: [
+                { placa: dto.placa, id_veiculo: Not(id) },
+                { chassi: dto.chassi, id_veiculo: Not(id) },
+                { renavam: dto.renavam, id_veiculo: Not(id) },
+            ],
+        });
+
+        if (existente) {
+            throw new ConflictException('Placa, chassi ou RENAVAM já cadastrado');
+        }
+
+        Object.assign(veiculo, { ...dto, preco: dto.preco.toFixed(2) });
         return this.repository.save(veiculo);
     }
 }
