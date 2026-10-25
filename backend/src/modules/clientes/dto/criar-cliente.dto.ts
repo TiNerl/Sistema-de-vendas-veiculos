@@ -1,53 +1,55 @@
-import { IsString, IsNotEmpty, IsEmail, MinLength, MaxLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CriarClienteDto {
+  @IsNotEmpty({ message: 'O nome é obrigatório' })
   @IsString()
-  @IsNotEmpty()
-  @MinLength(2)
-  @MaxLength(150)
+  @MinLength(3, { message: 'O nome deve ter no mínimo 3 caracteres' })
+  @MaxLength(100, { message: 'O nome deve ter no máximo 100 caracteres' })
   nome: string;
 
+  @IsNotEmpty({ message: 'O CPF é obrigatório' })
   @IsString()
-  @IsNotEmpty()
-  @MinLength(11)
-  @MaxLength(11)
+  @MinLength(11, { message: 'O CPF deve ter exatamente 11 dígitos' })
+  @MaxLength(11, { message: 'O CPF deve ter exatamente 11 dígitos' })
   cpf: string;
 
-  @IsEmail()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'O e-mail é obrigatório' })
+  @IsEmail({}, { message: 'Formato de e-mail inválido' })
   email: string;
 
+  @IsNotEmpty({ message: 'O telefone é obrigatório' })
   @IsString()
-  @IsNotEmpty()
-  @MinLength(10)
-  @MaxLength(11)
+  @MinLength(10, { message: 'O telefone deve ter no mínimo 10 dígitos' })
+  @MaxLength(15, { message: 'O telefone deve ter no máximo 15 dígitos' })
   telefone: string;
 
+  @IsNotEmpty({ message: 'O CEP é obrigatório' })
   @IsString()
-  @IsNotEmpty()
-  @MinLength(8)
-  @MaxLength(8)
+  @MinLength(8, { message: 'O CEP deve ter exatamente 8 dígitos' })
+  @MaxLength(8, { message: 'O CEP deve ter exatamente 8 dígitos' })
   cep: string;
 
+  @IsNotEmpty({ message: 'O endereço é obrigatório' })
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(200)
+  @MinLength(5, { message: 'O endereço deve ter no mínimo 5 caracteres' })
+  @MaxLength(150, { message: 'O endereço deve ter no máximo 150 caracteres' })
   endereco: string;
 
+  @IsNotEmpty({ message: 'A cidade é obrigatória' })
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
+  @MinLength(2, { message: 'A cidade deve ter no mínimo 2 caracteres' })
+  @MaxLength(50, { message: 'A cidade deve ter no máximo 50 caracteres' })
   cidade: string;
 
+  @IsNotEmpty({ message: 'O estado é obrigatório' })
   @IsString()
-  @IsNotEmpty()
-  @MinLength(2)
-  @MaxLength(2)
+  @MinLength(2, { message: 'O estado deve ter exatamente 2 caracteres (ex: SP)' })
+  @MaxLength(2, { message: 'O estado deve ter exatamente 2 caracteres (ex: SP)' })
   estado: string;
 
+  @IsNotEmpty({ message: 'O documento é obrigatório' })
   @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  @MaxLength(14)
+  @MinLength(5, { message: 'O documento deve ter no mínimo 5 caracteres' })
+  @MaxLength(20, { message: 'O documento deve ter no máximo 20 caracteres' })
   documento: string;
 }

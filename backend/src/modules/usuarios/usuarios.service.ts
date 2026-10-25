@@ -12,8 +12,9 @@ export type UsuarioAutenticado = Omit<Usuario, 'senha'>;
 export class UsuariosService {
     constructor(@InjectRepository(Usuario) private readonly repository: Repository<Usuario>,) { }
 
-    listar() {
-        return this.repository.find({ order: { id_usuario: 'ASC' } });
+    async listar() {
+        const usuarios = await this.repository.find({ order: { id_usuario: 'ASC' } });
+        return usuarios.map(({ senha: _senha, ...usuario }) => usuario);
     }
 
     async buscarPorId(id_usuario: number) {
@@ -21,7 +22,8 @@ export class UsuariosService {
         if (!usuario) {
             throw new NotFoundException('Usuario não encontrado');
         }
-        return usuario;
+        const { senha: _senha, ...resposta } = usuario;
+        return resposta;
     }
 
     buscarParaLogin(cpf: string) {
