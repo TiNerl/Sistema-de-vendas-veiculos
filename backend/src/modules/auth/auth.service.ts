@@ -28,6 +28,7 @@ export class AuthService {
       sub: usuario.id_usuario,
       cpf: usuario.cpf,
       perfil: usuario.perfil,
+      nome: usuario.nome,
     };
 
     return {

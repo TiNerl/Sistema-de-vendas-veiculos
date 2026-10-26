@@ -12,35 +12,35 @@ export class VeiculosController {
     constructor(private readonly veiculosService: VeiculosService) {}
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('admin')
+    @Roles('admin', 'vendedor')
     @Get()
     listar() {
         return this.veiculosService.listar();
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('admin')
+    @Roles('admin', 'vendedor')
     @Get(':id')
     buscarPorId(@Param('id', ParseIntPipe) id: number) {
         return this.veiculosService.buscarPorId(id);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('admin')
+    @Roles('admin', 'vendedor')
     @Post()
     cadastrar(@Body() dto: CriarVeiculoDto) {
         return this.veiculosService.cadastrar(dto);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('admin')
+    @Roles('admin', 'vendedor')
     @Patch(':id')
     atualizar(@Param('id', ParseIntPipe) id: number, @Body() dto: AtualizarVeiculoDto) {
         return this.veiculosService.atualizar(id, dto);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('admin')
+    @Roles('admin', 'vendedor')
     @Patch(':id/status')
     atualizarStatus(
         @Param('id', ParseIntPipe) id: number,

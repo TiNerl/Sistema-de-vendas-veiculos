@@ -33,6 +33,13 @@ export class ClientesController {
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin', 'vendedor')
+    @Get(':id')
+    buscarPorId(@Param('id', ParseIntPipe) id: number) {
+        return this.clientesService.buscarPorId(id);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin', 'vendedor')
     @Patch(':id')
     atualizar(@Param('id', ParseIntPipe) id: number, @Body() dto: AtualizarClienteDto) {
         return this.clientesService.atualizar(id, dto);

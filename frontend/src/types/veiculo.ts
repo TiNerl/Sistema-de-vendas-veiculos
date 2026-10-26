@@ -13,7 +13,7 @@ export type Veiculo = {
     placa: string
     chassi: string
     renavam: string
-    preco: number
+    preco: number | string
     status: StatusVeiculo
     data_criacao?: string
     atualizado_em?: string

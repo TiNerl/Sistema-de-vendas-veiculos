@@ -1,41 +1,37 @@
-import { requisitar } from './api'
+import { api } from './api'
 import type { StatusVeiculo, Veiculo, VeiculoInput } from '../types/veiculo'
 
-export function listarVeiculos(token: string): Promise<Veiculo[]> {
-    return requisitar<Veiculo[]>('/veiculos', {}, token)
+export async function listarVeiculos(): Promise<Veiculo[]> {
+    const resposta = await api.get<Veiculo[]>('/veiculos')
+    return resposta.data
 }
 
-export function buscarVeiculo(id: number, token: string): Promise<Veiculo> {
-    return requisitar<Veiculo>(`/veiculos/${id}`, {}, token)
+export async function buscarVeiculo(id: number): Promise<Veiculo> {
+    const resposta = await api.get<Veiculo>(`/veiculos/${id}`)
+    return resposta.data
 }
 
-export function cadastrarVeiculo(dados: VeiculoInput, token: string): Promise<Veiculo> {
-    return requisitar<Veiculo>('/veiculos', {
-        method: 'POST',
-        body: JSON.stringify({
-            ...dados,
-            placa: dados.placa.replace(/-/g, '').toUpperCase(),
-            chassi: dados.chassi.toUpperCase(),
-            preco: Number(dados.preco),
-        }),
-    }, token)
+export async function cadastrarVeiculo(dados: VeiculoInput): Promise<Veiculo> {
+    const resposta = await api.post<Veiculo>('/veiculos', {
+        ...dados,
+        placa: dados.placa.replace(/-/g, '').toUpperCase(),
+        chassi: dados.chassi.toUpperCase(),
+        preco: Number(dados.preco),
+    })
+    return resposta.data
 }
 
-export function atualizarVeiculo(id: number, dados: VeiculoInput, token: string): Promise<Veiculo> {
-    return requisitar<Veiculo>(`/veiculos/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-            ...dados,
-            placa: dados.placa.replace(/-/g, '').toUpperCase(),
-            chassi: dados.chassi.toUpperCase(),
-            preco: Number(dados.preco),
-        }),
-    }, token)
+export async function atualizarVeiculo(id: number, dados: VeiculoInput): Promise<Veiculo> {
+    const resposta = await api.patch<Veiculo>(`/veiculos/${id}`, {
+        ...dados,
+        placa: dados.placa.replace(/-/g, '').toUpperCase(),
+        chassi: dados.chassi.toUpperCase(),
+        preco: Number(dados.preco),
+    })
+    return resposta.data
 }
 
-export function atualizarStatusVeiculo(id: number, status: StatusVeiculo, token: string): Promise<Veiculo> {
-    return requisitar<Veiculo>(`/veiculos/${id}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-    }, token)
+export async function atualizarStatusVeiculo(id: number, status: StatusVeiculo): Promise<Veiculo> {
+    const resposta = await api.patch<Veiculo>(`/veiculos/${id}/status`, { status })
+    return resposta.data
 }

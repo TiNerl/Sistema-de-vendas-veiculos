@@ -70,6 +70,16 @@ export class ClientesService {
         });
     }
 
+    async buscarPorId(id: number): Promise<Cliente> {
+        const cliente = await this.repository.findOneBy({ id_cliente: id });
+
+        if (!cliente) {
+            throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
+        }
+
+        return cliente;
+    }
+
     async atualizar(id: number, dto: AtualizarClienteDto) {
         const cliente = await this.repository.findOneBy({ id_cliente: id });
 
