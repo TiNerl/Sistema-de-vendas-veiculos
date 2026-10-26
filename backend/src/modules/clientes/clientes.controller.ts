@@ -24,6 +24,8 @@ export class ClientesController {
         return this.clientesService.inativar(id);
     }
 
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin', 'vendedor')
     @Get()
     findAll(@Query('busca') busca?: string) {
         return this.clientesService.findAll(busca);
