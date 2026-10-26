@@ -8,6 +8,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClientesModule } from './modules/clientes/clientes.module';
 import { VeiculosModule } from './modules/veiculos/veiculos.module';
+import { VendasModule } from './modules/vendas/vendas.module';
 
 
 //export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -39,6 +40,7 @@ import { VeiculosModule } from './modules/veiculos/veiculos.module';
     AuthModule,
     ClientesModule,
     VeiculosModule,
+    VendasModule,
   ],
   controllers: [AppController],
   providers: [AppService],
