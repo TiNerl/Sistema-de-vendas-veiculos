@@ -29,7 +29,14 @@ export class UsuariosService {
     buscarParaLogin(cpf: string) {
         return this.repository.findOne({
             where: { cpf },
-            select: { id_usuario: true, cpf: true, senha: true, perfil: true, ativo: true },
+            select: {
+                id_usuario: true,
+                nome: true,
+                cpf: true,
+                senha: true,
+                perfil: true,
+                ativo: true,
+            },
         });
     }
 

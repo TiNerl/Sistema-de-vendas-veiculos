@@ -11,7 +11,7 @@ const menuAberto = ref(false)
 const administrador = computed(() => auth.usuario?.perfil === 'admin')
 const tituloPagina = computed(() => route.meta.titulo ?? 'AutoSaller')
 const identificadorUsuario = computed(
-  () => auth.usuario?.cpf ?? 'Usuário autenticado',
+  () => auth.usuario?.nome ?? auth.usuario?.cpf ?? 'Usuário autenticado',
 )
 const perfilUsuario = computed(() =>
   auth.usuario?.perfil === 'admin' ? 'Administrador' : 'Vendedor',
@@ -67,6 +67,21 @@ async function sair() {
         </div>
 
         <template v-if="administrador">
+          <span class="nav-label">Gestão de clientes</span>
+          <div class="sidebar-nav">
+            <RouterLink
+              class="sidebar-link"
+              exact-active-class="sidebar-link--current"
+              to="/admin/clientes"
+              @click="menuAberto = false"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M16 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-5A4.5 4.5 0 0 0 2 18.5V20m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm9-2v6m3-3h-6" />
+              </svg>
+              <span>Clientes</span>
+            </RouterLink>
+          </div>
+
           <span class="nav-label">Gestão de usuários</span>
           <div class="sidebar-nav nav-group">
             <RouterLink

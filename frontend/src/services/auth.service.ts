@@ -16,6 +16,7 @@ export interface UsuarioAutenticado {
   id: number
   cpf: string
   perfil: PerfilUsuario
+  nome?: string
 }
 
 export async function login(

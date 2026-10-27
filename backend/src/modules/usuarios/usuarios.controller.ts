@@ -11,7 +11,7 @@ import { InativarUsuarioDto } from './dto/inativar-usuario.dto';
 export class UsuariosController {
     constructor(private readonly usuariosService: UsuariosService) { }
 
-    @UseGuards(JwtAuthGuard, RolesGuard)
+   @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
     @Get()
     listar() {

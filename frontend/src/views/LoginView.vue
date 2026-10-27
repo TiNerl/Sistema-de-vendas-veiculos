@@ -51,7 +51,9 @@ async function entrar() {
     const caminhoSeguro =
       typeof destino === 'string' && destino.startsWith('/') && !destino.startsWith('//')
         ? destino
-        : '/dashboard'
+        : auth.usuario?.perfil === 'vendedor'
+          ? '/vendedor'
+          : '/dashboard'
     await router.replace(caminhoSeguro)
   } catch {
     // A mensagem de autenticação é exibida pelo estado da store.
