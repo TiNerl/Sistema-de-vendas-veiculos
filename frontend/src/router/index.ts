@@ -64,6 +64,16 @@ const router = createRouter({
           },
         },
         {
+          path: 'admin/veiculos',
+          name: 'admin-veiculos',
+          component: VeiculosVendedorView,
+          meta: {
+            requerAutenticacao: true,
+            apenasAdministrador: true,
+            titulo: 'Veículos / estoque',
+          },
+        },
+        {
           path: 'admin/clientes/cadastrar',
           name: 'admin-cadastrar-cliente',
           component: CadastrarClienteView,
@@ -195,6 +205,12 @@ router.beforeEach(async (to) => {
   if (apenasVendedor && auth.usuario?.perfil !== 'vendedor') {
     return auth.usuario?.perfil === 'admin'
       ? { name: 'dashboard' }
+      : { name: 'login' }
+  }
+
+  if (to.name === 'admin-veiculos' && auth.usuario?.perfil !== 'admin') {
+    return auth.usuario?.perfil === 'vendedor'
+      ? { name: 'vendedor-veiculos' }
       : { name: 'login' }
   }
 

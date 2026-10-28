@@ -1,4 +1,5 @@
 export type StatusVeiculo = 'disponivel' | 'reservado' | 'vendido' | 'em_manutencao'
+export type CombustivelVeiculo = 'gasolina' | 'etanol' | 'flex' | 'diesel' | 'eletrico' | 'hibrido'
 
 export type Veiculo = {
     id_veiculo?: number
@@ -8,7 +9,7 @@ export type Veiculo = {
     ano: number
     cor: string
     quilometragem: number
-    combustivel: string
+    combustivel: CombustivelVeiculo | string
     cambio: string
     placa: string
     chassi: string
@@ -27,6 +28,20 @@ export const opcoesStatus: { valor: StatusVeiculo; rotulo: string }[] = [
     { valor: 'vendido', rotulo: 'Vendido' },
     { valor: 'em_manutencao', rotulo: 'Em Manutenção' },
 ]
+
+export const opcoesCombustivel: { valor: CombustivelVeiculo; rotulo: string }[] = [
+    { valor: 'gasolina', rotulo: 'Gasolina' },
+    { valor: 'etanol', rotulo: 'Etanol' },
+    { valor: 'flex', rotulo: 'Flex' },
+    { valor: 'diesel', rotulo: 'Diesel' },
+    { valor: 'eletrico', rotulo: 'Elétrico' },
+    { valor: 'hibrido', rotulo: 'Híbrido' },
+]
+
+export function rotuloCombustivel(combustivel: string): string {
+    const encontrado = opcoesCombustivel.find((opcao) => opcao.valor === combustivel)
+    return encontrado?.rotulo ?? combustivel
+}
 
 export function novoVeiculo(): VeiculoInput {
     return {
