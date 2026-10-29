@@ -176,7 +176,6 @@ onMounted(carregarDados)
             <div><dt>Desconto</dt><dd>{{ moeda(valorDesconto) }} ({{ Number(percentualDesconto || 0).toLocaleString('pt-BR') }}%)</dd></div>
             <div><dt>Valor final estimado</dt><dd><strong>{{ moeda(valorFinal) }}</strong></dd></div>
           </dl>
-          <p class="field-help">O valor definitivo é calculado e validado pelo backend no momento do registro.</p>
         </section>
 
         <div class="form-actions">
