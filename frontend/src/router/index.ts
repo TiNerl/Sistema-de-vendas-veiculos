@@ -12,6 +12,7 @@ import VeiculosVendedorView from '@/views/VeiculosVendedorView.vue'
 import ClientesView from '@/views/ClientesView.vue'
 import CadastrarClienteView from '@/views/CadastrarClienteView.vue'
 import CadastrarVendaView from '@/views/CadastrarVendaView.vue'
+import HistoricoVendasView from '@/views/HistoricoVendasView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
@@ -104,6 +105,16 @@ const router = createRouter({
             titulo: 'Inativar usuário',
           },
         },
+        {
+          path: 'admin/vendas',
+          name: 'admin-historico-vendas',
+          component: HistoricoVendasView,
+          meta: {
+            requerAutenticacao: true,
+            apenasAdministrador: true,
+            titulo: 'Histórico de Vendas',
+          },
+        },
       ],
     },
     {
@@ -146,6 +157,12 @@ const router = createRouter({
           name: 'vendedor-vendas',
           component: CadastrarVendaView,
           meta: { titulo: 'Registrar venda' },
+        },
+        {
+          path: 'vendas/historico',
+          name: 'vendedor-historico-vendas',
+          component: HistoricoVendasView,
+          meta: { titulo: 'Histórico de Vendas' },
         },
         {
           path: 'test-drives',

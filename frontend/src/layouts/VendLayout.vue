@@ -25,8 +25,13 @@ const itensNavegacao = [
     icon: 'M3 13l2-6h14l2 6v6h-3v-2H6v2H3v-6Zm2 0h14M7 16h.1M17 16h.1',
   },
   {
-    label: 'Vendas',
+    label: 'Registrar venda',
     to: '/vendedor/vendas',
+    icon: 'M12 4v16m8-8H4',
+  },
+  {
+    label: 'Histórico de vendas',
+    to: '/vendedor/vendas/historico',
     icon: 'M4 19V5m0 14h16M8 15v-4m4 4V7m4 8v-6',
   },
   {
