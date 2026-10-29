@@ -11,6 +11,7 @@ import ModuloVendedorView from '@/views/ModuloVendedorView.vue'
 import VeiculosVendedorView from '@/views/VeiculosVendedorView.vue'
 import ClientesView from '@/views/ClientesView.vue'
 import CadastrarClienteView from '@/views/CadastrarClienteView.vue'
+import CadastrarVendaView from '@/views/CadastrarVendaView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
@@ -143,8 +144,8 @@ const router = createRouter({
         {
           path: 'vendas',
           name: 'vendedor-vendas',
-          component: ModuloVendedorView,
-          meta: { titulo: 'Vendas' },
+          component: CadastrarVendaView,
+          meta: { titulo: 'Registrar venda' },
         },
         {
           path: 'test-drives',
