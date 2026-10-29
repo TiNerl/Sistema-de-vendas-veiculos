@@ -1,8 +1,9 @@
-import { IsOptional, IsDateString, IsInt } from 'class-validator';
+import { IsOptional, IsDateString, IsInt, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class FiltrarVendasDto {
   @IsOptional()
+  @Min(1)
   @Type(() => Number)
   @IsInt({ message: 'O ID do cliente deve ser um número inteiro' })
   cliente_id?: number;

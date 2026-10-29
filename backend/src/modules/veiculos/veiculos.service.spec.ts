@@ -28,6 +28,7 @@ describe('VeiculosService', () => {
 
     const repository = {
         findOne: vi.fn(),
+        findOneBy: vi.fn(),
         find: vi.fn(),
         create: vi.fn(),
         save: vi.fn(),
