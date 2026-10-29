@@ -1,24 +1,25 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { Venda } from './venda.entity'
+import { Venda } from './venda.entity';
 import { Cliente } from '../clientes/cliente.entity';
 import { Usuario } from '../usuarios/usuario.entity';
 import { Veiculo } from '../veiculos/veiculo.entity';
 import { CadastrarVendaDto } from './dto/cadastrar-venda.dto';
+import { FiltrarVendasDto } from './dto/filtrar-vendas.dto';
 import { StatusVeiculo } from '../veiculos/veiculo-status.enum';
 
 @Injectable()
 export class VendasService {
-    constructor(@InjectRepository(Venda) private readonly repository: Repository<Venda>,
-        private readonly dataSource: DataSource) { }
+    constructor(
+        @InjectRepository(Venda) private readonly repository: Repository<Venda>,
+        private readonly dataSource: DataSource
+    ) { }
 
     private readonly PERCENTUAL_COMISSAO = 3;
 
     async cadastrarVenda(dto: CadastrarVendaDto, id_usuario: number) {
-
         return this.dataSource.transaction(async (manager) => {
-
             const cliente = await manager.findOneBy(Cliente, {
                 id_cliente: dto.id_cliente,
             });
@@ -32,31 +33,28 @@ export class VendasService {
             });
 
             if (!usuario) {
-                throw new NotFoundException('Usuário não encontrado')
+                throw new NotFoundException('Usuário não encontrado');
             }
 
             if (!cliente) {
-                throw new NotFoundException('Cliente não encontrado')
+                throw new NotFoundException('Cliente não encontrado');
             }
 
             if (!cliente.ativo) {
-                throw new ConflictException('Cliente não está ativo')
+                throw new ConflictException('Cliente não está ativo');
             }
 
             if (!veiculo) {
-                throw new NotFoundException('Veículo não cadastrado no estoque')
+                throw new NotFoundException('Veículo não cadastrado no estoque');
             }
 
             if (veiculo.status !== StatusVeiculo.DISPONIVEL) {
-                throw new ConflictException('O veículo não está disponível em estoque')
+                throw new ConflictException('O veículo não está disponível em estoque');
             }
 
             const percentualDesconto = dto.percentual_desconto ?? 0;
-
             const valorDesconto = (percentualDesconto / 100) * Number(veiculo.preco);
-
             const valorFinal = Number(veiculo.preco) - valorDesconto;
-
             const valorComissao = (this.PERCENTUAL_COMISSAO / 100) * valorFinal;
 
             const venda = this.repository.create({
@@ -71,7 +69,7 @@ export class VendasService {
                 percentual_comissao: this.PERCENTUAL_COMISSAO.toFixed(2),
                 valor_comissao: valorComissao.toFixed(2),
                 status: 'concluida'
-            })
+            });
 
             const vendaSalva = await manager.save(Venda, venda);
 
@@ -104,5 +102,35 @@ export class VendasService {
             });
         });
     }
-}
 
+    async buscarTodas(dto: FiltrarVendasDto): Promise<Venda[]> {
+        const { cliente_id, dataInicio, dataFim } = dto;
+
+        // Regra de Negócio: Data inicial não pode ser posterior à data final
+        if (dataInicio && dataFim && new Date(dataInicio) > new Date(dataFim)) {
+            throw new BadRequestException('A data inicial não pode ser posterior à data final');
+        }
+
+        const query = this.repository.createQueryBuilder('venda')
+            .leftJoinAndSelect('venda.cliente', 'cliente')
+            .leftJoinAndSelect('venda.veiculo', 'veiculo')
+            .leftJoinAndSelect('venda.usuario', 'usuario');
+
+        if (cliente_id !== undefined) {
+            query.andWhere('cliente.id_cliente = :cliente_id', { cliente_id });
+        }
+
+        if (dataInicio) {
+            const inicio = new Date(dataInicio);
+            query.andWhere('venda.data_venda >= :inicio', { inicio });
+        }
+
+        if (dataFim) {
+            const fim = new Date(dataFim);
+            fim.setUTCHours(23, 59, 59, 999);
+            query.andWhere('venda.data_venda <= :fim', { fim });
+        }
+
+        return await query.orderBy('venda.data_venda', 'DESC').getMany();
+    }
+}
