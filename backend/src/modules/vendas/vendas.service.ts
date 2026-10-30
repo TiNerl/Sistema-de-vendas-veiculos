@@ -53,6 +53,13 @@ export class VendasService {
             }
 
             const percentualDesconto = dto.percentual_desconto ?? 0;
+
+            if (usuario.perfil === 'vendedor') {
+                if (percentualDesconto > 10) {
+                    throw new BadRequestException('Percentual de desconto não permitido!');
+                }
+            }
+            
             const valorDesconto = (percentualDesconto / 100) * Number(veiculo.preco);
             const valorFinal = Number(veiculo.preco) - valorDesconto;
             const valorComissao = (this.PERCENTUAL_COMISSAO / 100) * valorFinal;
