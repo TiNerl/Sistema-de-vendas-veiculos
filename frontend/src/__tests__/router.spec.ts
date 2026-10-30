@@ -63,4 +63,26 @@ describe('controle de acesso das rotas', () => {
 
     expect(router.currentRoute.value.name).toBe('admin-clientes')
   })
+
+  it('permite que vendedor acesse suas solicitações de desconto', async () => {
+    const auth = useAuthStore()
+    auth.token = 'token-de-teste'
+    auth.autenticado = true
+    auth.usuario = { id: 2, cpf: '00000000000', perfil: 'vendedor' }
+
+    await router.push('/vendedor/descontos?case=seller-descontos')
+
+    expect(router.currentRoute.value.name).toBe('vendedor-solicitacoes-desconto')
+  })
+
+  it('permite que somente administrador acesse a fila de aprovação', async () => {
+    const auth = useAuthStore()
+    auth.token = 'token-de-teste'
+    auth.autenticado = true
+    auth.usuario = { id: 1, cpf: '11111111111', perfil: 'admin' }
+
+    await router.push('/admin/descontos?case=admin-descontos')
+
+    expect(router.currentRoute.value.name).toBe('admin-solicitacoes-desconto')
+  })
 })

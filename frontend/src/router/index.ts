@@ -13,6 +13,7 @@ import ClientesView from '@/views/ClientesView.vue'
 import CadastrarClienteView from '@/views/CadastrarClienteView.vue'
 import CadastrarVendaView from '@/views/CadastrarVendaView.vue'
 import HistoricoVendasView from '@/views/HistoricoVendasView.vue'
+import SolicitacoesDescontoView from '@/views/SolicitacoesDescontoView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
@@ -115,6 +116,16 @@ const router = createRouter({
             titulo: 'Histórico de Vendas',
           },
         },
+        {
+          path: 'admin/descontos',
+          name: 'admin-solicitacoes-desconto',
+          component: SolicitacoesDescontoView,
+          meta: {
+            requerAutenticacao: true,
+            apenasAdministrador: true,
+            titulo: 'Solicitações de desconto',
+          },
+        },
       ],
     },
     {
@@ -163,6 +174,12 @@ const router = createRouter({
           name: 'vendedor-historico-vendas',
           component: HistoricoVendasView,
           meta: { titulo: 'Histórico de Vendas' },
+        },
+        {
+          path: 'descontos',
+          name: 'vendedor-solicitacoes-desconto',
+          component: SolicitacoesDescontoView,
+          meta: { titulo: 'Solicitações de desconto' },
         },
         {
           path: 'test-drives',
