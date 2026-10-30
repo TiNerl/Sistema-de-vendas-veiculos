@@ -110,6 +110,9 @@ describe('HistoricoVendasView', () => {
     expect(wrapper.text()).not.toContain('Vendedor A')
     expect(wrapper.text()).toContain('95.000,00')
     expect(wrapper.text()).toContain('5.000,00')
+    expect(wrapper.text()).toContain('3,00%')
+    expect(wrapper.text()).toContain('2.850,00')
+    expect(wrapper.find('button[aria-label^="Cancelar venda"]').exists()).toBe(false)
   })
 
   it('mostra o histórico completo e o vendedor para administradores', async () => {
@@ -120,7 +123,27 @@ describe('HistoricoVendasView', () => {
     expect(wrapper.text()).toContain('Vendedor A')
     expect(wrapper.text()).toContain('Vendedor B')
     expect(wrapper.text()).toContain('2.850,00')
+    expect(wrapper.text()).toContain('3,00%')
     expect(wrapper.text()).toContain('Não informado')
+  })
+
+  it('solicita justificativa ao administrador antes do cancelamento e não confirma sem API', async () => {
+    const wrapper = await montar('admin')
+    await wrapper.get('button[aria-label="Cancelar venda 1"]').trigger('click')
+
+    expect(wrapper.get('[role="dialog"]').text()).toContain('Confirmar cancelamento da venda')
+    expect(wrapper.get('#justificativa-cancelamento').attributes('required')).toBeDefined()
+    expect(wrapper.get('#justificativa-cancelamento').attributes('maxlength')).toBe('1000')
+    expect(wrapper.get('[role="dialog"]').text()).toContain(
+      'A justificativa não será enviada nem salva.',
+    )
+    expect(wrapper.get('[role="dialog"] button.button--danger').attributes('disabled')).toBeDefined()
+
+    await wrapper.get('#justificativa-cancelamento').setValue('Solicitação do cliente')
+    expect(wrapper.get('[role="dialog"] button.button--danger').attributes('disabled')).toBeDefined()
+
+    await wrapper.get('[role="dialog"] button.button--secondary').trigger('click')
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
   })
 
   it('aplica o filtro de cliente recebido na URL', async () => {
