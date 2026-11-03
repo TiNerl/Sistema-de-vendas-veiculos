@@ -52,9 +52,4 @@ export class FiltrarVeiculosDto {
     @IsEnum(StatusVeiculo)
     status?: StatusVeiculo;
 
-    @IsOptional()
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    cliente_id?: number;
 }

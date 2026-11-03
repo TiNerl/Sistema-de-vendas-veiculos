@@ -5,13 +5,12 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { ILike, Not, Repository } from 'typeorm';
 import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
 import { Veiculo } from './veiculo.entity';
 import { StatusVeiculo } from './veiculo-status.enum';
 import { AtualizarVeiculoDto } from './dto/atualizar-veiculo.dto';
 import { FiltrarVeiculosDto } from './dto/filtrar-veiculos.dto';
-import { Venda } from '../vendas/venda.entity';
 
 @Injectable()
 export class VeiculosService {
@@ -52,7 +51,6 @@ export class VeiculosService {
             ano,
             combustivel,
             status,
-            cliente_id,
         } = dto;
 
         // Valida a faixa de preço
@@ -69,15 +67,11 @@ export class VeiculosService {
         const query = this.repository.createQueryBuilder('veiculo');
 
         if (marca) {
-            query.andWhere('veiculo.marca ILIKE :marca', {
-                marca: `%${marca}%`,
-            });
+            query.andWhere({ marca: ILike(`%${marca}%`) });
         }
 
         if (modelo) {
-            query.andWhere('veiculo.modelo ILIKE :modelo', {
-                modelo: `%${modelo}%`,
-            });
+            query.andWhere({ modelo: ILike(`%${modelo}%`) });
         }
 
         if (precoMin !== undefined) {
@@ -106,18 +100,6 @@ export class VeiculosService {
             query.andWhere('veiculo.status = :status', { status });
         }
 
-        if (cliente_id !== undefined) {
-            query.andWhere(
-                `EXISTS (
-                SELECT 1
-                FROM venda venda
-                WHERE venda.id_veiculo = veiculo.id_veiculo
-                AND venda.id_cliente = :cliente_id
-                AND venda.status = 'concluida'
-            )`,
-                { cliente_id },
-            );
-        }
 
         return query
             .orderBy('veiculo.id_veiculo', 'DESC')

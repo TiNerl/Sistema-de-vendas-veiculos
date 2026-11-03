@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { AtualizarStatusVeiculoDto } from './dto/atualizar-status-veiculo.dto';
 import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
 import { Veiculo } from './veiculo.entity';
@@ -30,8 +30,14 @@ describe('VeiculosService', () => {
         findOne: vi.fn(),
         findOneBy: vi.fn(),
         find: vi.fn(),
+        createQueryBuilder: vi.fn(),
         create: vi.fn(),
         save: vi.fn(),
+    };
+    const queryBuilder = {
+        andWhere: vi.fn(),
+        orderBy: vi.fn(),
+        getMany: vi.fn(),
     };
     let service: VeiculosService;
 
@@ -40,6 +46,9 @@ describe('VeiculosService', () => {
         repository.findOne.mockResolvedValue(null);
         repository.create.mockImplementation((veiculo) => veiculo);
         repository.save.mockImplementation(async (veiculo) => veiculo);
+        repository.createQueryBuilder.mockReturnValue(queryBuilder);
+        queryBuilder.orderBy.mockReturnValue(queryBuilder);
+        queryBuilder.getMany.mockResolvedValue([]);
 
         const module = await Test.createTestingModule({
             providers: [
@@ -52,6 +61,17 @@ describe('VeiculosService', () => {
         }).compile();
 
         service = module.get(VeiculosService);
+    });
+
+    it('filtra marca e modelo com os operadores ILike do TypeORM', async () => {
+        await expect(service.listar({ marca: 'Toyota', modelo: 'Corolla' })).resolves.toEqual([]);
+
+        expect(queryBuilder.andWhere).toHaveBeenNthCalledWith(1, {
+            marca: ILike('%Toyota%'),
+        });
+        expect(queryBuilder.andWhere).toHaveBeenNthCalledWith(2, {
+            modelo: ILike('%Corolla%'),
+        });
     });
 
     it('cadastra o veículo com o preço armazenado em centavos decimais', async () => {
