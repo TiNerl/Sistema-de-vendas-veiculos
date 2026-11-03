@@ -133,4 +133,21 @@ export class VendasService {
 
         return await query.orderBy('venda.data_venda', 'DESC').getMany();
     }
+
+    async buscarPorId(id: number): Promise<Venda> {
+        const venda = await this.repository.findOne({
+            where: { id_venda: id },
+            relations: {
+                cliente: true,
+                veiculo: true,
+                usuario: true,
+            },
+        });
+
+        if (!venda) {
+            throw new NotFoundException('Venda não encontrada');
+        }
+
+        return venda;
+    }
 }

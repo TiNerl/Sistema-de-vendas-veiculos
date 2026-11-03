@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Req, Body, Query, UseGuards } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Get,
+    Param,
+    ParseIntPipe,
+    Post,
+    Query,
+    Req,
+    UseGuards,
+} from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { VendasService } from './vendas.service';
 import { CadastrarVendaDto } from './dto/cadastrar-venda.dto';
@@ -26,5 +36,12 @@ export class VendasController {
     @Get()
     findAll(@Query() dto: FiltrarVendasDto) {
         return this.vendasService.buscarTodas(dto);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin', 'vendedor')
+    @Get(':id')
+    buscarPorId(@Param('id', ParseIntPipe) id: number) {
+        return this.vendasService.buscarPorId(id);
     }
 }
