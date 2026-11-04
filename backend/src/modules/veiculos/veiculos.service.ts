@@ -1,10 +1,16 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    ConflictException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { ILike, Not, Repository } from 'typeorm';
 import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
 import { Veiculo } from './veiculo.entity';
 import { StatusVeiculo } from './veiculo-status.enum';
 import { AtualizarVeiculoDto } from './dto/atualizar-veiculo.dto';
+import { FiltrarVeiculosDto } from './dto/filtrar-veiculos.dto';
 
 @Injectable()
 export class VeiculosService {
@@ -35,9 +41,71 @@ export class VeiculosService {
         return this.repository.save(veiculo);
     }
 
-    listar() {
-        return this.repository.find({ order: { id_veiculo: 'DESC' } });
+
+    async listar(dto: FiltrarVeiculosDto) {
+        const {
+            marca,
+            modelo,
+            precoMin,
+            precoMax,
+            ano,
+            combustivel,
+            status,
+        } = dto;
+
+        // Valida a faixa de preço
+        if (
+            precoMin !== undefined &&
+            precoMax !== undefined &&
+            precoMin > precoMax
+        ) {
+            throw new BadRequestException(
+                'O preço mínimo não pode ser maior que o preço máximo',
+            );
+        }
+
+        const query = this.repository.createQueryBuilder('veiculo');
+
+        if (marca) {
+            query.andWhere({ marca: ILike(`%${marca}%`) });
+        }
+
+        if (modelo) {
+            query.andWhere({ modelo: ILike(`%${modelo}%`) });
+        }
+
+        if (precoMin !== undefined) {
+            query.andWhere('veiculo.preco >= :precoMin', {
+                precoMin,
+            });
+        }
+
+        if (precoMax !== undefined) {
+            query.andWhere('veiculo.preco <= :precoMax', {
+                precoMax,
+            });
+        }
+
+        if (ano !== undefined) {
+            query.andWhere('veiculo.ano = :ano', { ano });
+        }
+
+        if (combustivel) {
+            query.andWhere('veiculo.combustivel = :combustivel', {
+                combustivel,
+            });
+        }
+
+        if (status) {
+            query.andWhere('veiculo.status = :status', { status });
+        }
+
+
+        return query
+            .orderBy('veiculo.id_veiculo', 'DESC')
+            .getMany();
     }
+
 
     async buscarPorId(id: number) {
         const veiculo = await this.repository.findOne({ where: { id_veiculo: id } });

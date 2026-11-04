@@ -8,6 +8,7 @@ import { Veiculo } from '../veiculos/veiculo.entity';
 import { CadastrarVendaDto } from './dto/cadastrar-venda.dto';
 import { FiltrarVendasDto } from './dto/filtrar-vendas.dto';
 import { StatusVeiculo } from '../veiculos/veiculo-status.enum';
+import type { StatusVenda } from './venda.entity';
 
 @Injectable()
 export class VendasService {
@@ -53,11 +54,17 @@ export class VendasService {
             }
 
             const percentualDesconto = dto.percentual_desconto ?? 0;
+
+            const precisaAprovacao = usuario.perfil === 'vendedor' && percentualDesconto > 10;
+
+            const statusVenda: StatusVenda = precisaAprovacao ? 'pendente' : 'concluida';
+            const statusVeiculo: StatusVeiculo = precisaAprovacao ? StatusVeiculo.RESERVADO : StatusVeiculo.VENDIDO;
+
             const valorDesconto = (percentualDesconto / 100) * Number(veiculo.preco);
             const valorFinal = Number(veiculo.preco) - valorDesconto;
             const valorComissao = (this.PERCENTUAL_COMISSAO / 100) * valorFinal;
 
-            const venda = this.repository.create({
+            const venda = manager.create(Venda, {
                 usuario: usuario,
                 cliente: cliente,
                 veiculo: veiculo,
@@ -68,7 +75,7 @@ export class VendasService {
                 forma_pagamento: dto.forma_pagamento,
                 percentual_comissao: this.PERCENTUAL_COMISSAO.toFixed(2),
                 valor_comissao: valorComissao.toFixed(2),
-                status: 'concluida'
+                status: statusVenda
             });
 
             const vendaSalva = await manager.save(Venda, venda);
@@ -76,7 +83,7 @@ export class VendasService {
             const resultado = await manager
                 .createQueryBuilder()
                 .update(Veiculo)
-                .set({ status: StatusVeiculo.VENDIDO })
+                .set({ status: statusVeiculo })
                 .where('id_veiculo = :id', {
                     id: veiculo.id_veiculo,
                 })
@@ -89,8 +96,8 @@ export class VendasService {
                 throw new ConflictException('O veículo não está mais disponível para venda');
             }
 
-            veiculo.status = StatusVeiculo.VENDIDO;
-            vendaSalva.veiculo.status = StatusVeiculo.VENDIDO;
+            veiculo.status = statusVeiculo;
+            vendaSalva.veiculo.status = statusVeiculo;
 
             return manager.findOneOrFail(Venda, {
                 where: { id_venda: vendaSalva.id_venda },
@@ -132,5 +139,131 @@ export class VendasService {
         }
 
         return await query.orderBy('venda.data_venda', 'DESC').getMany();
+    }
+
+    async aprovar(id: number) {
+        return this.dataSource.transaction(async (manager) => {
+            const venda = await manager.findOne(Venda, {
+                where: {
+                    id_venda: id,
+                    status: 'pendente',
+                },
+                relations: {
+                    cliente: true,
+                    veiculo: true,
+                    usuario: true,
+                },
+            });
+
+            if (!venda) {
+                throw new NotFoundException('Venda pendente não encontrada')
+            }
+
+            const resultadoVenda = await manager
+                .createQueryBuilder()
+                .update(Venda)
+                .set({ status: 'concluida' })
+                .where('id_venda = :id', {
+                    id: venda.id_venda,
+                })
+                .andWhere('status = :status', {
+                    status: 'pendente'
+                })
+                .execute();
+
+            if (resultadoVenda.affected !== 1) {
+                throw new ConflictException('A venda não está mais pendente de aprovação');
+            }
+
+            const resultadoVeiculo = await manager
+                .createQueryBuilder()
+                .update(Veiculo)
+                .set({ status: StatusVeiculo.VENDIDO })
+                .where('id_veiculo = :id', {
+                    id: venda.veiculo.id_veiculo,
+                })
+                .andWhere('status = :status', {
+                    status: StatusVeiculo.RESERVADO,
+                })
+                .execute();
+
+            if (resultadoVeiculo.affected !== 1) {
+                throw new ConflictException('O veículo não está mais reservado');
+            }
+
+            return manager.findOneOrFail(Venda, {
+                where: {
+                    id_venda: venda.id_venda,
+                },
+                relations: {
+                    cliente: true,
+                    veiculo: true,
+                    usuario: true,
+                },
+            });
+        });
+    }
+
+    async rejeitar(id: number) {
+        return this.dataSource.transaction(async (manager) => {
+            const venda = await manager.findOne(Venda, {
+                where: {
+                    id_venda: id,
+                    status: 'pendente',
+                },
+                relations: {
+                    cliente: true,
+                    veiculo: true,
+                    usuario: true,
+                },
+            });
+
+            if (!venda) {
+                throw new NotFoundException('Venda pendente não encontrada')
+            }
+
+            const resultadoVenda = await manager
+                .createQueryBuilder()
+                .update(Venda)
+                .set({ status: 'cancelada' })
+                .where('id_venda = :id', {
+                    id: venda.id_venda,
+                })
+                .andWhere('status = :status', {
+                    status: 'pendente'
+                })
+                .execute();
+
+            if (resultadoVenda.affected !== 1) {
+                throw new ConflictException('A venda não está mais pendente de aprovação');
+            }
+
+            const resultadoVeiculo = await manager
+                .createQueryBuilder()
+                .update(Veiculo)
+                .set({ status: StatusVeiculo.DISPONIVEL })
+                .where('id_veiculo = :id', {
+                    id: venda.veiculo.id_veiculo,
+                })
+                .andWhere('status = :status', {
+                    status: StatusVeiculo.RESERVADO,
+                })
+                .execute();
+
+            if (resultadoVeiculo.affected !== 1) {
+                throw new ConflictException('O veículo não está mais reservado');
+            }
+
+            return manager.findOneOrFail(Venda, {
+                where: {
+                    id_venda: venda.id_venda,
+                },
+                relations: {
+                    cliente: true,
+                    veiculo: true,
+                    usuario: true,
+                },
+            });
+        });
     }
 }
