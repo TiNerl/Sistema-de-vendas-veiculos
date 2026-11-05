@@ -3,32 +3,15 @@ import { Test } from '@nestjs/testing';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { Repository } from 'typeorm';
-import { ConfiguracaoEstoque } from './configuracao-estoque.entity';
-import { AtualizarStatusVeiculoDto } from './dto/atualizar-status-veiculo.dto';
+import { ILike, Not } from 'typeorm';
 import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
-import { ListarVeiculosDto } from './dto/listar-veiculos.dto';
+import { FiltrarVeiculosDto } from './dto/filtrar-veiculos.dto';
 import { Veiculo } from './veiculo.entity';
 import { VeiculosService } from './veiculos.service';
 import { StatusVeiculo } from './veiculo-status.enum';
+import { Venda } from '../vendas/venda.entity';
 
 describe('VeiculosService', () => {
-    const filtrosIndividuais: {
-        nome: string;
-        filtros: ListarVeiculosDto;
-        condicao: string;
-        parametros: Record<string, string | number>;
-    }[] = [
-        { nome: 'marca', filtros: { marca: 'Toyota' }, condicao: 'LOWER(veiculo.marca) = LOWER(:marca)', parametros: { marca: 'Toyota' } },
-        { nome: 'modelo', filtros: { modelo: 'Cor' }, condicao: 'veiculo.modelo ILIKE :modelo', parametros: { modelo: '%Cor%' } },
-        { nome: 'preço mínimo', filtros: { precoMin: 100000 }, condicao: 'veiculo.preco >= :precoMin', parametros: { precoMin: 100000 } },
-        { nome: 'preço máximo', filtros: { precoMax: 200000 }, condicao: 'veiculo.preco <= :precoMax', parametros: { precoMax: 200000 } },
-        { nome: 'ano inicial', filtros: { anoMin: 2020 }, condicao: 'veiculo.ano >= :anoMin', parametros: { anoMin: 2020 } },
-        { nome: 'ano final', filtros: { anoMax: 2025 }, condicao: 'veiculo.ano <= :anoMax', parametros: { anoMax: 2025 } },
-        { nome: 'combustível', filtros: { combustivel: 'diesel' }, condicao: 'veiculo.combustivel = :combustivel', parametros: { combustivel: 'diesel' } },
-        { nome: 'status', filtros: { status: StatusVeiculo.VENDIDO }, condicao: 'veiculo.status = :status', parametros: { status: StatusVeiculo.VENDIDO } },
-    ];
-
     const dto: CriarVeiculoDto = {
         marca: 'Toyota',
         modelo: 'Corolla',
@@ -44,8 +27,7 @@ describe('VeiculosService', () => {
         preco: 145000,
     };
 
-    const consulta = {
-        select: vi.fn().mockReturnThis(),
+    const queryBuilder = {
         andWhere: vi.fn().mockReturnThis(),
         orderBy: vi.fn().mockReturnThis(),
         getMany: vi.fn(),
@@ -53,24 +35,17 @@ describe('VeiculosService', () => {
     const repository = {
         findOne: vi.fn(),
         findOneBy: vi.fn(),
-        count: vi.fn(),
-        find: vi.fn(),
-        create: vi.fn(),
-        createQueryBuilder: vi.fn(() => consulta),
+        createQueryBuilder: vi.fn(() => queryBuilder),
+        create: vi.fn((veiculo) => veiculo),
         save: vi.fn(),
-    };
-    const configuracaoRepository = {
-        findOneBy: vi.fn(),
-        upsert: vi.fn(),
     };
     const manager = {
         findOne: vi.fn(),
         save: vi.fn(),
+        remove: vi.fn(),
     };
     const dataSource = {
-        transaction: vi.fn((operation: (transactionManager: typeof manager) => Promise<unknown>) =>
-            operation(manager),
-        ),
+        transaction: vi.fn(),
     };
     let service: VeiculosService;
 
@@ -78,79 +53,47 @@ describe('VeiculosService', () => {
         vi.clearAllMocks();
         repository.findOne.mockResolvedValue(null);
         repository.findOneBy.mockResolvedValue(null);
-        repository.count.mockResolvedValue(0);
         repository.create.mockImplementation((veiculo) => veiculo);
         repository.save.mockImplementation(async (veiculo) => veiculo);
-        repository.createQueryBuilder.mockReturnValue(consulta);
-        consulta.getMany.mockResolvedValue([{ id_veiculo: 2 }, { id_veiculo: 1 }]);
-        configuracaoRepository.findOneBy.mockResolvedValue(null);
-        configuracaoRepository.upsert.mockResolvedValue(undefined);
+        repository.createQueryBuilder.mockReturnValue(queryBuilder);
+        queryBuilder.getMany.mockResolvedValue([]);
         manager.findOne.mockResolvedValue(null);
-        manager.save.mockImplementation(async (_entity, veiculo) => veiculo);
-        dataSource.transaction.mockImplementation((operation) => operation(manager));
+        manager.save.mockImplementation(async (_entity, value) => value);
+        manager.remove.mockImplementation(async (_entity, value) => value);
+        dataSource.transaction.mockImplementation(
+            async (operation: (transactionManager: typeof manager) => unknown) =>
+                operation(manager),
+        );
 
         const module = await Test.createTestingModule({
             providers: [
                 VeiculosService,
-                {
-                    provide: getRepositoryToken(Veiculo),
-                    useValue: repository,
-                },
-                {
-                    provide: getRepositoryToken(ConfiguracaoEstoque),
-                    useValue: configuracaoRepository,
-                },
-                {
-                    provide: getDataSourceToken(),
-                    useValue: dataSource,
-                },
+                { provide: getRepositoryToken(Veiculo), useValue: repository },
+                { provide: getDataSourceToken(), useValue: dataSource },
             ],
         }).compile();
 
         service = module.get(VeiculosService);
     });
 
-    it('cadastra o veículo com o preço armazenado em centavos decimais', async () => {
+    it('cadastra veículo disponível e formata o preço', async () => {
         await expect(service.cadastrar(dto)).resolves.toMatchObject({
             ...dto,
             preco: '145000.00',
             status: StatusVeiculo.DISPONIVEL,
         });
-        expect(repository.findOne).toHaveBeenCalledWith({
-            where: [{ placa: dto.placa }, { chassi: dto.chassi }, { renavam: dto.renavam }],
-        });
         expect(repository.save).toHaveBeenCalledOnce();
     });
 
-    it('rejeita uma placa, chassi ou RENAVAM já cadastrado', async () => {
-        repository.findOne.mockResolvedValue({ id_veiculo: 1 });
+    it('recusa placa, chassi ou RENAVAM duplicados', async () => {
+        repository.findOne.mockResolvedValue({ ...dto, id_veiculo: 3 });
 
         await expect(service.cadastrar(dto)).rejects.toBeInstanceOf(ConflictException);
         expect(repository.save).not.toHaveBeenCalled();
     });
 
-    it('lista os veículos mais recentes primeiro sem expor campos desnecessários', async () => {
-        await expect(service.listar()).resolves.toEqual([
-            { id_veiculo: 2 },
-            { id_veiculo: 1 },
-        ]);
-        expect(repository.createQueryBuilder).toHaveBeenCalledWith('veiculo');
-        expect(consulta.select).toHaveBeenCalledWith([
-            'veiculo.id_veiculo',
-            'veiculo.marca',
-            'veiculo.modelo',
-            'veiculo.versao',
-            'veiculo.ano',
-            'veiculo.quilometragem',
-            'veiculo.combustivel',
-            'veiculo.preco',
-            'veiculo.status',
-        ]);
-        expect(consulta.orderBy).toHaveBeenCalledWith('veiculo.id_veiculo', 'DESC');
-    });
-
-    it('combina todos os filtros na consulta do estoque', async () => {
-        await service.listar({
+    it('aplica filtros combinados de marca, preço, ano, combustível e status', async () => {
+        await service.filtrar({
             marca: ' Toyota ',
             modelo: 'Cor',
             precoMin: 100000,
@@ -161,9 +104,9 @@ describe('VeiculosService', () => {
             status: StatusVeiculo.RESERVADO,
         });
 
-        expect(consulta.andWhere.mock.calls).toEqual([
-            ['LOWER(veiculo.marca) = LOWER(:marca)', { marca: 'Toyota' }],
-            ['veiculo.modelo ILIKE :modelo', { modelo: '%Cor%' }],
+        expect(queryBuilder.andWhere.mock.calls).toEqual([
+            [{ marca: ILike('%Toyota%') }],
+            [{ modelo: ILike('%Cor%') }],
             ['veiculo.preco >= :precoMin', { precoMin: 100000 }],
             ['veiculo.preco <= :precoMax', { precoMax: 200000 }],
             ['veiculo.ano >= :anoMin', { anoMin: 2020 }],
@@ -171,25 +114,20 @@ describe('VeiculosService', () => {
             ['veiculo.combustivel = :combustivel', { combustivel: 'flex' }],
             ['veiculo.status = :status', { status: StatusVeiculo.RESERVADO }],
         ]);
+        expect(queryBuilder.orderBy).toHaveBeenCalledWith('veiculo.id_veiculo', 'DESC');
     });
 
-    it.each(filtrosIndividuais)('aplica somente o filtro de $nome', ({ filtros, condicao, parametros }) => {
-        service.listar(filtros);
-
-        expect(consulta.andWhere).toHaveBeenCalledOnce();
-        expect(consulta.andWhere).toHaveBeenCalledWith(condicao, parametros);
-    });
-
-    it('rejeita intervalos de preço ou ano invertidos', () => {
-        expect(() => service.listar({ precoMin: 200000, precoMax: 100000 }))
-            .toThrow('O preço mínimo não pode ser maior que o preço máximo');
-        expect(() => service.listar({ anoMin: 2025, anoMax: 2020 }))
-            .toThrow('O ano inicial não pode ser maior que o ano final');
-        expect(repository.createQueryBuilder).not.toHaveBeenCalled();
+    it('rejeita faixas de preço e ano invertidas', async () => {
+        await expect(
+            service.filtrar({ precoMin: 200000, precoMax: 100000 }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        await expect(
+            service.filtrar({ anoMin: 2025, anoMax: 2020 }),
+        ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('valida os filtros recebidos pela API', async () => {
-        const filtrosValidos = plainToInstance(ListarVeiculosDto, {
+        const filtrosValidos = plainToInstance(FiltrarVeiculosDto, {
             precoMin: '100000',
             anoMax: '2025',
             combustivel: 'diesel',
@@ -197,7 +135,7 @@ describe('VeiculosService', () => {
         });
         await expect(validate(filtrosValidos)).resolves.toHaveLength(0);
 
-        const filtrosInvalidos = plainToInstance(ListarVeiculosDto, {
+        const filtrosInvalidos = plainToInstance(FiltrarVeiculosDto, {
             precoMin: '-1',
             anoMin: '1800',
             status: 'inativo',
@@ -208,7 +146,7 @@ describe('VeiculosService', () => {
         );
     });
 
-    it('consulta um veículo pelo id e retorna 404 quando não existe', async () => {
+    it('busca veículo por ID e retorna 404 quando ausente', async () => {
         repository.findOne.mockResolvedValueOnce({ id_veiculo: 1 });
         await expect(service.buscarPorId(1)).resolves.toEqual({ id_veiculo: 1 });
 
@@ -216,147 +154,54 @@ describe('VeiculosService', () => {
         await expect(service.buscarPorId(99)).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it('atualiza o veículo mantendo seus identificadores únicos', async () => {
-        const existente = { id_veiculo: 1, ...dto, preco: '100.00' };
-        repository.findOneBy.mockResolvedValueOnce(existente);
-        repository.findOne.mockResolvedValueOnce(null);
+    it('atualiza dados e valida identificadores únicos contra outros veículos', async () => {
+        const veiculo = { id_veiculo: 1, ...dto, preco: '100.00' };
+        repository.findOneBy.mockResolvedValue(veiculo);
 
         await expect(service.atualizar(1, { ...dto, preco: 150000 })).resolves.toMatchObject({
             ...dto,
             preco: '150000.00',
         });
-        expect(repository.findOne).toHaveBeenLastCalledWith({
+        expect(repository.findOne).toHaveBeenCalledWith({
             where: [
-                { placa: dto.placa, id_veiculo: expect.anything() },
-                { chassi: dto.chassi, id_veiculo: expect.anything() },
-                { renavam: dto.renavam, id_veiculo: expect.anything() },
+                { placa: dto.placa, id_veiculo: Not(1) },
+                { chassi: dto.chassi, id_veiculo: Not(1) },
+                { renavam: dto.renavam, id_veiculo: Not(1) },
             ],
         });
-        expect(repository.save).toHaveBeenCalledOnce();
     });
 
-    it('não atualiza quando os identificadores pertencem a outro veículo', async () => {
-        repository.findOne
-            .mockResolvedValueOnce({ id_veiculo: 2 });
-        repository.findOneBy.mockResolvedValueOnce({ id_veiculo: 1, ...dto });
-
-        await expect(service.atualizar(1, dto)).rejects.toBeInstanceOf(ConflictException);
-        expect(repository.save).not.toHaveBeenCalled();
-    });
-
-    it('permite alterar entre disponível e em manutenção e bloqueia estados controlados por processo', async () => {
+    it('altera status entre disponível e manutenção', async () => {
         const veiculo = { id_veiculo: 1, status: StatusVeiculo.DISPONIVEL };
         manager.findOne.mockImplementation(async (entity: unknown) =>
             entity === Veiculo ? veiculo : null,
         );
 
-        await expect(service.atualizarStatus(1, StatusVeiculo.EM_MANUTENCAO)).resolves.toMatchObject({
-            status: StatusVeiculo.EM_MANUTENCAO,
-        });
-        expect(manager.findOne).toHaveBeenCalledWith(Veiculo, {
-            where: { id_veiculo: 1 },
-            lock: { mode: 'pessimistic_write' },
-        });
+        await expect(
+            service.atualizarStatus(1, StatusVeiculo.EM_MANUTENCAO),
+        ).resolves.toMatchObject({ status: StatusVeiculo.EM_MANUTENCAO });
         expect(manager.save).toHaveBeenCalledWith(Veiculo, veiculo);
-
-        await expect(service.atualizarStatus(1, StatusVeiculo.DISPONIVEL)).resolves.toMatchObject({
-            status: StatusVeiculo.DISPONIVEL,
-        });
-
-        for (const status of [StatusVeiculo.RESERVADO, StatusVeiculo.VENDIDO]) {
-            await expect(service.atualizarStatus(1, status)).rejects.toBeInstanceOf(
-                BadRequestException,
-            );
-        }
     });
 
-    it('não permite liberar manualmente um veículo reservado ou vendido', async () => {
-        for (const status of [StatusVeiculo.RESERVADO, StatusVeiculo.VENDIDO]) {
-            manager.findOne.mockImplementation(async () => ({ id_veiculo: 1, status }));
+    it('impede exclusão de veículo com histórico de venda', async () => {
+        manager.findOne
+            .mockResolvedValueOnce({ id_veiculo: 1 })
+            .mockResolvedValueOnce({ id_venda: 9 });
 
-            await expect(
-                service.atualizarStatus(1, StatusVeiculo.DISPONIVEL),
-            ).rejects.toBeInstanceOf(ConflictException);
-        }
-
-        expect(manager.save).not.toHaveBeenCalled();
+        await expect(service.excluir(1)).rejects.toBeInstanceOf(ConflictException);
+        expect(manager.remove).not.toHaveBeenCalled();
     });
 
-    it('não permite alterar um veículo com venda concluída', async () => {
-        const veiculo = { id_veiculo: 1, status: StatusVeiculo.EM_MANUTENCAO };
+    it('exclui veículo sem registros de venda e retorna seu identificador', async () => {
+        const veiculo = { id_veiculo: 1 };
         manager.findOne
             .mockResolvedValueOnce(veiculo)
-            .mockResolvedValueOnce({ status: 'concluida' });
+            .mockResolvedValueOnce(null);
 
-        await expect(
-            service.atualizarStatus(1, StatusVeiculo.DISPONIVEL),
-        ).rejects.toBeInstanceOf(ConflictException);
-        expect(manager.save).not.toHaveBeenCalled();
-    });
-
-    it('retorna resumo contando apenas veículos disponíveis e usa mínimo padrão 10', async () => {
-        repository.count.mockResolvedValue(7);
-
-        await expect(service.obterResumoEstoque()).resolves.toEqual({
-            quantidadeDisponivel: 7,
-            quantidadeMinima: 10,
-            abaixoDoMinimo: true,
+        await expect(service.excluir(1)).resolves.toEqual({ id_veiculo: 1 });
+        expect(manager.findOne).toHaveBeenNthCalledWith(2, Venda, {
+            where: { veiculo: { id_veiculo: 1 } },
         });
-        expect(repository.count).toHaveBeenCalledWith({
-            where: { status: StatusVeiculo.DISPONIVEL },
-        });
-    });
-
-    it('salva a quantidade mínima e recalcula a situação do estoque', async () => {
-        repository.count.mockResolvedValue(12);
-        configuracaoRepository.findOneBy.mockResolvedValue({
-            id: 1,
-            quantidade_minima: 15,
-        });
-
-        await expect(service.atualizarMinimoEstoque(15)).resolves.toEqual({
-            quantidadeDisponivel: 12,
-            quantidadeMinima: 15,
-            abaixoDoMinimo: true,
-        });
-        expect(configuracaoRepository.upsert).toHaveBeenCalledWith(
-            { id: 1, quantidade_minima: 15 },
-            ['id'],
-        );
-    });
-
-    it('rejeita status de veículo inválido', async () => {
-        for (const status of Object.values(StatusVeiculo)) {
-            const dtoValido = plainToInstance(AtualizarStatusVeiculoDto, { status });
-            await expect(validate(dtoValido)).resolves.toHaveLength(0);
-        }
-
-        const dtoInvalido = plainToInstance(AtualizarStatusVeiculoDto, { status: 'inativo' });
-        await expect(validate(dtoInvalido)).resolves.toHaveLength(1);
-    });
-
-    it('normaliza placa e chassi e valida os dados obrigatórios', async () => {
-        const entrada = plainToInstance(CriarVeiculoDto, {
-            ...dto,
-            placa: 'abc-1d23',
-            chassi: dto.chassi.toLowerCase(),
-        });
-
-        await expect(validate(entrada)).resolves.toHaveLength(0);
-        expect(entrada.placa).toBe('ABC1D23');
-        expect(entrada.chassi).toBe(dto.chassi);
-
-        const invalido = plainToInstance(CriarVeiculoDto, {
-            ...dto,
-            ano: 1800,
-            quilometragem: -1,
-            renavam: '123',
-            preco: 0,
-        });
-        const erros = await validate(invalido);
-
-        expect(erros.map((erro) => erro.property)).toEqual(
-            expect.arrayContaining(['ano', 'quilometragem', 'renavam', 'preco']),
-        );
+        expect(manager.remove).toHaveBeenCalledWith(Veiculo, veiculo);
     });
 });

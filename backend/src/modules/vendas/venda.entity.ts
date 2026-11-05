@@ -13,7 +13,7 @@ import { Usuario } from '../../modules/usuarios/usuario.entity';
 import { Veiculo } from '../../modules/veiculos/veiculo.entity';
 
 export type FormaPagamento = 'a_vista' | 'pix' | 'financiamento' | 'consorcio';
-export type StatusVenda = 'pendente' | 'concluida';
+export type StatusVenda = 'pendente' | 'concluida' | 'cancelada';
 
 @Entity({ name: 'venda' })
 export class Venda {
