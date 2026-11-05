@@ -54,7 +54,7 @@ export class VeiculosService {
         return this.repository.save(veiculo);
     }
 
-    async filtrar(dto: FiltrarVeiculosDto) {
+    async listar(dto: FiltrarVeiculosDto) {
         const {
             marca,
             modelo,
@@ -239,32 +239,6 @@ export class VeiculosService {
 
             veiculo.status = status;
             return manager.save(Veiculo, veiculo);
-        });
-    }
-
-    async excluir(id: number) {
-        return this.dataSource.transaction(async (manager) => {
-            const veiculo = await manager.findOne(Veiculo, {
-                where: { id_veiculo: id },
-                lock: { mode: 'pessimistic_write' },
-            });
-
-            if (!veiculo) {
-                throw new NotFoundException(`Veículo com ID ${id} não encontrado`);
-            }
-
-            const venda = await manager.findOne(Venda, {
-                where: { veiculo: { id_veiculo: id } },
-            });
-
-            if (venda) {
-                throw new ConflictException(
-                    'Não é permitido excluir um veículo que possui registro de venda.',
-                );
-            }
-
-            await manager.remove(Veiculo, veiculo);
-            return { id_veiculo: id };
         });
     }
 }

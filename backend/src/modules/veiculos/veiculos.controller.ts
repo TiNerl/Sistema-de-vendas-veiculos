@@ -26,8 +26,8 @@ export class VeiculosController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin', 'vendedor')
     @Get()
-    filtrar(@Query() dto: FiltrarVeiculosDto) {
-        return this.veiculosService.filtrar(dto);
+    listar(@Query() dto: FiltrarVeiculosDto) {
+        return this.veiculosService.listar(dto);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
@@ -59,12 +59,5 @@ export class VeiculosController {
         @Body() dto: AtualizarStatusVeiculoDto,
     ) {
         return this.veiculosService.atualizarStatus(id, dto.status);
-    }
-
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('admin')
-    @Delete(':id')
-    excluir(@Param('id', ParseIntPipe) id: number) {
-        return this.veiculosService.excluir(id);
     }
 }
