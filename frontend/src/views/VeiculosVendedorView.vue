@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { isAxiosError } from 'axios'
+import { useRoute } from 'vue-router'
 import { listarVeiculos, type FiltrosVeiculos } from '@/services/veiculos.service'
+import { useAuthStore } from '@/stores/auth'
 import {
   opcoesCombustivel,
   opcoesStatus,
@@ -32,12 +34,27 @@ const filtrosPadrao: FiltrosVeiculo = {
   status: '',
 }
 
+const route = useRoute()
+const auth = useAuthStore()
 const veiculos = ref<Veiculo[]>([])
 const filtros = ref<FiltrosVeiculo>({ ...filtrosPadrao })
 const filtrosAplicados = ref<FiltrosVeiculo>({ ...filtrosPadrao })
 const veiculosFiltrados = computed(() => veiculos.value)
 const carregando = ref(false)
 const erro = ref('')
+const mensagemSucesso = computed(() =>
+  route.query.veiculoSalvo === 'editado'
+    ? 'Veículo atualizado com sucesso.'
+    : route.query.veiculoSalvo === 'cadastrado'
+      ? 'Veículo cadastrado com sucesso.'
+      : '',
+)
+const podeGerenciar = computed(() =>
+  auth.usuario?.perfil === 'admin' || auth.usuario?.perfil === 'vendedor',
+)
+const rotaLista = computed(() =>
+  auth.usuario?.perfil === 'vendedor' ? '/vendedor/veiculos' : '/admin/veiculos',
+)
 const mensagemValidacao = ref('')
 const ultimaConsulta = ref(0)
 
@@ -173,6 +190,17 @@ onMounted(carregarVeiculos)
         <h1>Estoque de Veículos</h1>
         <p>Consulte os veículos cadastrados e filtre o estoque por critérios específicos.</p>
       </div>
+      <RouterLink
+        v-if="podeGerenciar"
+        class="button button--gold"
+        :to="{ path: `${rotaLista}/cadastrar`, query: route.query }"
+      >
+        Cadastrar veículo
+      </RouterLink>
+    </div>
+
+    <div v-if="mensagemSucesso" class="alert alert--success notice" role="status">
+      {{ mensagemSucesso }}
     </div>
 
     <div v-if="erro" class="alert alert--error notice" role="alert">
@@ -268,6 +296,7 @@ onMounted(carregarVeiculos)
               <th scope="col">Quilometragem</th>
               <th scope="col">Preço</th>
               <th scope="col">Status</th>
+              <th v-if="podeGerenciar" scope="col">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -284,6 +313,17 @@ onMounted(carregarVeiculos)
                 <span class="status-badge" :class="`status-badge--${veiculo.status}`">
                   {{ statusLegivel(veiculo.status) }}
                 </span>
+              </td>
+              <td v-if="podeGerenciar">
+                <RouterLink
+                  class="button button--secondary"
+                  :to="{
+                    path: `${rotaLista}/${veiculo.id_veiculo}/editar`,
+                    query: route.query,
+                  }"
+                >
+                  Editar
+                </RouterLink>
               </td>
             </tr>
           </tbody>

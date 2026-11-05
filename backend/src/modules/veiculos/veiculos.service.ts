@@ -24,7 +24,18 @@ export class VeiculosService {
         });
 
         if (existente) {
-            throw new ConflictException('Placa, chassi ou RENAVAM já cadastrado');
+            const campoDuplicado = existente.placa === dto.placa
+                ? 'placa'
+                : existente.chassi === dto.chassi
+                    ? 'chassi'
+                    : existente.renavam === dto.renavam
+                        ? 'RENAVAM'
+                        : undefined;
+            throw new ConflictException(
+                campoDuplicado
+                    ? `Já existe um veículo cadastrado com esta ${campoDuplicado}.`
+                    : 'Placa, chassi ou RENAVAM já cadastrado',
+            );
         }
 
         const veiculo = this.repository.create({
@@ -126,7 +137,18 @@ export class VeiculosService {
             });
 
             if (existente) {
-                throw new ConflictException('Placa, chassi ou RENAVAM já cadastrado');
+                const campoDuplicado = existente.placa === dto.placa
+                    ? 'placa'
+                    : existente.chassi === dto.chassi
+                        ? 'chassi'
+                        : existente.renavam === dto.renavam
+                            ? 'RENAVAM'
+                            : undefined;
+                throw new ConflictException(
+                    campoDuplicado
+                        ? `Já existe um veículo cadastrado com esta ${campoDuplicado}.`
+                        : 'Placa, chassi ou RENAVAM já cadastrado',
+                );
             }
         }
 

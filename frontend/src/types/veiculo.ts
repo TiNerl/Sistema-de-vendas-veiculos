@@ -1,5 +1,6 @@
 export type StatusVeiculo = 'disponivel' | 'reservado' | 'vendido' | 'em_manutencao'
 export type CombustivelVeiculo = 'gasolina' | 'etanol' | 'flex' | 'diesel' | 'eletrico' | 'hibrido'
+export type CambioVeiculo = 'manual' | 'automatico' | 'cvt' | 'automatizado'
 
 export type Veiculo = {
     id_veiculo?: number
@@ -10,7 +11,7 @@ export type Veiculo = {
     cor: string
     quilometragem: number
     combustivel: CombustivelVeiculo | string
-    cambio: string
+    cambio: CambioVeiculo | string
     placa: string
     chassi: string
     renavam: string
@@ -36,6 +37,13 @@ export const opcoesCombustivel: { valor: CombustivelVeiculo; rotulo: string }[] 
     { valor: 'diesel', rotulo: 'Diesel' },
     { valor: 'eletrico', rotulo: 'Elétrico' },
     { valor: 'hibrido', rotulo: 'Híbrido' },
+]
+
+export const opcoesCambio: { valor: CambioVeiculo; rotulo: string }[] = [
+    { valor: 'manual', rotulo: 'Manual' },
+    { valor: 'automatico', rotulo: 'Automático' },
+    { valor: 'cvt', rotulo: 'CVT' },
+    { valor: 'automatizado', rotulo: 'Automatizado' },
 ]
 
 export function rotuloCombustivel(combustivel: string): string {
