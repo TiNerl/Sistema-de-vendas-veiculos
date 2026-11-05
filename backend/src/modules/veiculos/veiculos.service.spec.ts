@@ -1,9 +1,10 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { Repository } from 'typeorm';
+import { ConfiguracaoEstoque } from './configuracao-estoque.entity';
 import { AtualizarStatusVeiculoDto } from './dto/atualizar-status-veiculo.dto';
 import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
 import { ListarVeiculosDto } from './dto/listar-veiculos.dto';
@@ -52,10 +53,24 @@ describe('VeiculosService', () => {
     const repository = {
         findOne: vi.fn(),
         findOneBy: vi.fn(),
+        count: vi.fn(),
         find: vi.fn(),
         create: vi.fn(),
         createQueryBuilder: vi.fn(() => consulta),
         save: vi.fn(),
+    };
+    const configuracaoRepository = {
+        findOneBy: vi.fn(),
+        upsert: vi.fn(),
+    };
+    const manager = {
+        findOne: vi.fn(),
+        save: vi.fn(),
+    };
+    const dataSource = {
+        transaction: vi.fn((operation: (transactionManager: typeof manager) => Promise<unknown>) =>
+            operation(manager),
+        ),
     };
     let service: VeiculosService;
 
@@ -63,10 +78,16 @@ describe('VeiculosService', () => {
         vi.clearAllMocks();
         repository.findOne.mockResolvedValue(null);
         repository.findOneBy.mockResolvedValue(null);
+        repository.count.mockResolvedValue(0);
         repository.create.mockImplementation((veiculo) => veiculo);
         repository.save.mockImplementation(async (veiculo) => veiculo);
         repository.createQueryBuilder.mockReturnValue(consulta);
         consulta.getMany.mockResolvedValue([{ id_veiculo: 2 }, { id_veiculo: 1 }]);
+        configuracaoRepository.findOneBy.mockResolvedValue(null);
+        configuracaoRepository.upsert.mockResolvedValue(undefined);
+        manager.findOne.mockResolvedValue(null);
+        manager.save.mockImplementation(async (_entity, veiculo) => veiculo);
+        dataSource.transaction.mockImplementation((operation) => operation(manager));
 
         const module = await Test.createTestingModule({
             providers: [
@@ -74,6 +95,14 @@ describe('VeiculosService', () => {
                 {
                     provide: getRepositoryToken(Veiculo),
                     useValue: repository,
+                },
+                {
+                    provide: getRepositoryToken(ConfiguracaoEstoque),
+                    useValue: configuracaoRepository,
+                },
+                {
+                    provide: getDataSourceToken(),
+                    useValue: dataSource,
                 },
             ],
         }).compile();
@@ -215,14 +244,85 @@ describe('VeiculosService', () => {
         expect(repository.save).not.toHaveBeenCalled();
     });
 
-    it('altera o status do veículo', async () => {
+    it('permite alterar entre disponível e em manutenção e bloqueia estados controlados por processo', async () => {
         const veiculo = { id_veiculo: 1, status: StatusVeiculo.DISPONIVEL };
-        repository.findOne.mockResolvedValueOnce(veiculo);
+        manager.findOne.mockImplementation(async (entity: unknown) =>
+            entity === Veiculo ? veiculo : null,
+        );
 
-        await expect(service.atualizarStatus(1, StatusVeiculo.RESERVADO)).resolves.toMatchObject({
-            status: StatusVeiculo.RESERVADO,
+        await expect(service.atualizarStatus(1, StatusVeiculo.EM_MANUTENCAO)).resolves.toMatchObject({
+            status: StatusVeiculo.EM_MANUTENCAO,
         });
-        expect(repository.save).toHaveBeenCalledWith(veiculo);
+        expect(manager.findOne).toHaveBeenCalledWith(Veiculo, {
+            where: { id_veiculo: 1 },
+            lock: { mode: 'pessimistic_write' },
+        });
+        expect(manager.save).toHaveBeenCalledWith(Veiculo, veiculo);
+
+        await expect(service.atualizarStatus(1, StatusVeiculo.DISPONIVEL)).resolves.toMatchObject({
+            status: StatusVeiculo.DISPONIVEL,
+        });
+
+        for (const status of [StatusVeiculo.RESERVADO, StatusVeiculo.VENDIDO]) {
+            await expect(service.atualizarStatus(1, status)).rejects.toBeInstanceOf(
+                BadRequestException,
+            );
+        }
+    });
+
+    it('não permite liberar manualmente um veículo reservado ou vendido', async () => {
+        for (const status of [StatusVeiculo.RESERVADO, StatusVeiculo.VENDIDO]) {
+            manager.findOne.mockImplementation(async () => ({ id_veiculo: 1, status }));
+
+            await expect(
+                service.atualizarStatus(1, StatusVeiculo.DISPONIVEL),
+            ).rejects.toBeInstanceOf(ConflictException);
+        }
+
+        expect(manager.save).not.toHaveBeenCalled();
+    });
+
+    it('não permite alterar um veículo com venda concluída', async () => {
+        const veiculo = { id_veiculo: 1, status: StatusVeiculo.EM_MANUTENCAO };
+        manager.findOne
+            .mockResolvedValueOnce(veiculo)
+            .mockResolvedValueOnce({ status: 'concluida' });
+
+        await expect(
+            service.atualizarStatus(1, StatusVeiculo.DISPONIVEL),
+        ).rejects.toBeInstanceOf(ConflictException);
+        expect(manager.save).not.toHaveBeenCalled();
+    });
+
+    it('retorna resumo contando apenas veículos disponíveis e usa mínimo padrão 10', async () => {
+        repository.count.mockResolvedValue(7);
+
+        await expect(service.obterResumoEstoque()).resolves.toEqual({
+            quantidadeDisponivel: 7,
+            quantidadeMinima: 10,
+            abaixoDoMinimo: true,
+        });
+        expect(repository.count).toHaveBeenCalledWith({
+            where: { status: StatusVeiculo.DISPONIVEL },
+        });
+    });
+
+    it('salva a quantidade mínima e recalcula a situação do estoque', async () => {
+        repository.count.mockResolvedValue(12);
+        configuracaoRepository.findOneBy.mockResolvedValue({
+            id: 1,
+            quantidade_minima: 15,
+        });
+
+        await expect(service.atualizarMinimoEstoque(15)).resolves.toEqual({
+            quantidadeDisponivel: 12,
+            quantidadeMinima: 15,
+            abaixoDoMinimo: true,
+        });
+        expect(configuracaoRepository.upsert).toHaveBeenCalledWith(
+            { id: 1, quantidade_minima: 15 },
+            ['id'],
+        );
     });
 
     it('rejeita status de veículo inválido', async () => {

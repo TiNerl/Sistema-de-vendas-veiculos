@@ -40,6 +40,20 @@ describe('VeiculosController list endpoint access', () => {
         expect(Reflect.getMetadata(ROLES_KEY, listar)).toEqual(['admin', 'vendedor']);
     });
 
+    it('restringe alteração de status e configuração de estoque ao administrador', () => {
+        for (const handler of [
+            VeiculosController.prototype.atualizarStatus,
+            VeiculosController.prototype.obterResumoEstoque,
+            VeiculosController.prototype.atualizarMinimoEstoque,
+        ]) {
+            expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toEqual([
+                JwtAuthGuard,
+                RolesGuard,
+            ]);
+            expect(Reflect.getMetadata(ROLES_KEY, handler)).toEqual(['admin']);
+        }
+    });
+
     it.each(['admin', 'vendedor'])('permite o perfil %s', (perfilPermitido) => {
         perfil = perfilPermitido;
         const contexto = new ExecutionContextHost(

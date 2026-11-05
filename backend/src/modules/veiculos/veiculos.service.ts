@@ -1,6 +1,8 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { DataSource, Not, Repository } from 'typeorm';
+import { Venda } from '../vendas/venda.entity';
+import { ConfiguracaoEstoque } from './configuracao-estoque.entity';
 import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
 import { Veiculo } from './veiculo.entity';
 import { StatusVeiculo } from './veiculo-status.enum';
@@ -12,7 +14,12 @@ export class VeiculosService {
     constructor(
         @InjectRepository(Veiculo)
         private readonly repository: Repository<Veiculo>,
+        @InjectRepository(ConfiguracaoEstoque)
+        private readonly configuracaoRepository: Repository<ConfiguracaoEstoque>,
+        private readonly dataSource: DataSource,
     ) { }
+
+    private readonly QUANTIDADE_MINIMA_PADRAO = 10;
 
     async cadastrar(dto: CriarVeiculoDto) {
         const existente = await this.repository.findOne({
@@ -163,8 +170,77 @@ export class VeiculosService {
     }
 
     async atualizarStatus(id: number, status: StatusVeiculo) {
-        const veiculo = await this.buscarPorId(id);
-        veiculo.status = status;
-        return this.repository.save(veiculo);
+        return this.dataSource.transaction(async (manager) => {
+            const veiculo = await manager.findOne(Veiculo, {
+                where: { id_veiculo: id },
+                lock: { mode: 'pessimistic_write' },
+            });
+
+            if (!veiculo) {
+                throw new NotFoundException(`Veículo com ID ${id} não encontrado`);
+            }
+
+            if (veiculo.status === status) {
+                return veiculo;
+            }
+
+            if (
+                status !== StatusVeiculo.DISPONIVEL &&
+                status !== StatusVeiculo.EM_MANUTENCAO
+            ) {
+                throw new BadRequestException(
+                    'Os status reservado e vendido são controlados pelos processos de reserva e venda.',
+                );
+            }
+
+            if (
+                veiculo.status !== StatusVeiculo.DISPONIVEL &&
+                veiculo.status !== StatusVeiculo.EM_MANUTENCAO
+            ) {
+                throw new ConflictException(
+                    'Não é permitido alterar manualmente um veículo reservado ou vendido.',
+                );
+            }
+
+            const vendaConcluida = await manager.findOne(Venda, {
+                where: {
+                    veiculo: { id_veiculo: id },
+                    status: 'concluida',
+                },
+            });
+
+            if (vendaConcluida) {
+                throw new ConflictException(
+                    'Não é permitido alterar o status de um veículo com venda concluída.',
+                );
+            }
+
+            veiculo.status = status;
+            return manager.save(Veiculo, veiculo);
+        });
+    }
+
+    async obterResumoEstoque() {
+        const [quantidadeDisponivel, configuracao] = await Promise.all([
+            this.repository.count({ where: { status: StatusVeiculo.DISPONIVEL } }),
+            this.configuracaoRepository.findOneBy({ id: 1 }),
+        ]);
+        const quantidadeMinima =
+            configuracao?.quantidade_minima ?? this.QUANTIDADE_MINIMA_PADRAO;
+
+        return {
+            quantidadeDisponivel,
+            quantidadeMinima,
+            abaixoDoMinimo: quantidadeDisponivel < quantidadeMinima,
+        };
+    }
+
+    async atualizarMinimoEstoque(quantidadeMinima: number) {
+        await this.configuracaoRepository.upsert(
+            { id: 1, quantidade_minima: quantidadeMinima },
+            ['id'],
+        );
+
+        return this.obterResumoEstoque();
     }
 }

@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { isAxiosError } from 'axios'
 import { useRoute } from 'vue-router'
-import { listarVeiculos, type FiltrosVeiculos } from '@/services/veiculos.service'
+import {
+  atualizarMinimoEstoque,
+  atualizarStatusVeiculo,
+  listarVeiculos,
+  obterResumoEstoque,
+  type FiltrosVeiculos,
+  type ResumoEstoque,
+} from '@/services/veiculos.service'
 import { useAuthStore } from '@/stores/auth'
 import {
   opcoesCombustivel,
@@ -37,6 +44,7 @@ const filtrosPadrao: FiltrosVeiculo = {
 const route = useRoute()
 const auth = useAuthStore()
 const veiculos = ref<Veiculo[]>([])
+const resumoEstoque = ref<ResumoEstoque | null>(null)
 const filtros = ref<FiltrosVeiculo>({ ...filtrosPadrao })
 const filtrosAplicados = ref<FiltrosVeiculo>({ ...filtrosPadrao })
 const veiculosFiltrados = computed(() => veiculos.value)
@@ -52,11 +60,22 @@ const mensagemSucesso = computed(() =>
 const podeGerenciar = computed(() =>
   auth.usuario?.perfil === 'admin' || auth.usuario?.perfil === 'vendedor',
 )
+const ehAdministrador = computed(() => auth.usuario?.perfil === 'admin')
 const rotaLista = computed(() =>
   auth.usuario?.perfil === 'vendedor' ? '/vendedor/veiculos' : '/admin/veiculos',
 )
 const mensagemValidacao = ref('')
 const ultimaConsulta = ref(0)
+const veiculoSelecionado = ref<Veiculo | null>(null)
+const statusSelecionado = ref<StatusVeiculo>('em_manutencao')
+const erroStatus = ref('')
+const salvandoStatus = ref(false)
+const erroEstoque = ref('')
+const erroMinimo = ref('')
+const mensagemEstoque = ref('')
+const mensagemStatus = ref('')
+const minimoEstoqueForm = ref('10')
+const salvandoMinimo = ref(false)
 
 function parseNumeroOpcional(valor: string | number): number {
   const texto = String(valor).trim()
@@ -172,6 +191,94 @@ function statusLegivel(status: StatusVeiculo): string {
   return rotulos[status]
 }
 
+function statusPermitidos(status: StatusVeiculo): StatusVeiculo[] {
+  if (status === 'disponivel') return ['em_manutencao']
+  if (status === 'em_manutencao') return ['disponivel']
+  return []
+}
+
+function podeAlterarStatus(veiculo: Veiculo): boolean {
+  return ehAdministrador.value && statusPermitidos(veiculo.status).length > 0
+}
+
+function mensagemErro(error: unknown, fallback: string): string {
+  return isAxiosError(error) && typeof error.response?.data?.message === 'string'
+    ? error.response.data.message
+    : fallback
+}
+
+function abrirConfirmacaoStatus(veiculo: Veiculo) {
+  veiculoSelecionado.value = veiculo
+  statusSelecionado.value = statusPermitidos(veiculo.status)[0] ?? veiculo.status
+  erroStatus.value = ''
+  mensagemStatus.value = ''
+}
+
+function cancelarAlteracaoStatus() {
+  veiculoSelecionado.value = null
+  erroStatus.value = ''
+}
+
+async function confirmarAlteracaoStatus() {
+  const veiculo = veiculoSelecionado.value
+  if (!veiculo?.id_veiculo) return
+
+  salvandoStatus.value = true
+  erroStatus.value = ''
+
+  try {
+    await atualizarStatusVeiculo(veiculo.id_veiculo, statusSelecionado.value)
+    mensagemStatus.value = `Status do veículo ${veiculo.marca} ${veiculo.modelo} atualizado para ${statusLegivel(statusSelecionado.value)}.`
+    veiculoSelecionado.value = null
+    mensagemEstoque.value = ''
+    await carregarVeiculos(filtrosParaConsulta())
+    if (ehAdministrador.value) await carregarResumoEstoque()
+  } catch (error) {
+    erroStatus.value = mensagemErro(error, 'Não foi possível alterar o status do veículo.')
+  } finally {
+    salvandoStatus.value = false
+  }
+}
+
+async function carregarResumoEstoque() {
+  erroEstoque.value = ''
+
+  try {
+    resumoEstoque.value = await obterResumoEstoque()
+    minimoEstoqueForm.value = String(resumoEstoque.value.quantidadeMinima)
+  } catch (error) {
+    erroEstoque.value = mensagemErro(error, 'Não foi possível carregar o resumo do estoque.')
+  }
+}
+
+function atualizarResumoAoRetomar() {
+  if (ehAdministrador.value && document.visibilityState === 'visible') {
+    void carregarResumoEstoque()
+  }
+}
+
+async function salvarMinimoEstoque() {
+  const quantidadeMinima = Number(minimoEstoqueForm.value)
+  if (!Number.isInteger(quantidadeMinima) || quantidadeMinima < 0) {
+    erroMinimo.value = 'Informe uma quantidade mínima inteira igual ou maior que zero.'
+    return
+  }
+
+  salvandoMinimo.value = true
+  erroMinimo.value = ''
+  mensagemEstoque.value = ''
+
+  try {
+    resumoEstoque.value = await atualizarMinimoEstoque(quantidadeMinima)
+    minimoEstoqueForm.value = String(resumoEstoque.value.quantidadeMinima)
+    mensagemEstoque.value = 'Quantidade mínima de estoque atualizada.'
+  } catch (error) {
+    erroMinimo.value = mensagemErro(error, 'Não foi possível atualizar o mínimo de estoque.')
+  } finally {
+    salvandoMinimo.value = false
+  }
+}
+
 function precoLegivel(preco: Veiculo['preco']): string {
   const valor = Number(preco)
   return Number.isFinite(valor)
@@ -179,7 +286,17 @@ function precoLegivel(preco: Veiculo['preco']): string {
     : '—'
 }
 
-onMounted(carregarVeiculos)
+onMounted(() => {
+  void carregarVeiculos()
+  if (ehAdministrador.value) void carregarResumoEstoque()
+  window.addEventListener('focus', atualizarResumoAoRetomar)
+  document.addEventListener('visibilitychange', atualizarResumoAoRetomar)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('focus', atualizarResumoAoRetomar)
+  document.removeEventListener('visibilitychange', atualizarResumoAoRetomar)
+})
 </script>
 
 <template>
@@ -207,6 +324,65 @@ onMounted(carregarVeiculos)
       {{ erro }}
       <button class="inline-retry" type="button" @click="carregarVeiculos()">Tentar novamente</button>
     </div>
+
+    <div v-if="mensagemStatus" class="alert alert--success notice" role="status">
+      {{ mensagemStatus }}
+    </div>
+
+    <section
+      v-if="ehAdministrador"
+      class="card stock-card"
+      aria-label="Resumo e configuração do estoque"
+      aria-live="polite"
+    >
+      <div class="stock-overview">
+        <div>
+          <span class="eyebrow">ALERTA DE ESTOQUE MÍNIMO</span>
+          <h2>Veículos disponíveis</h2>
+          <p v-if="resumoEstoque">
+            {{ resumoEstoque.quantidadeDisponivel }} disponível(is) · mínimo configurado:
+            {{ resumoEstoque.quantidadeMinima }}
+          </p>
+          <p v-else-if="!erroEstoque">Carregando resumo do estoque...</p>
+          <p v-if="resumoEstoque?.abaixoDoMinimo" class="stock-warning" role="alert">
+            Estoque baixo! Existem apenas {{ resumoEstoque.quantidadeDisponivel }} veículos
+            disponíveis. O mínimo configurado é de {{ resumoEstoque.quantidadeMinima }}.
+          </p>
+          <p v-if="mensagemEstoque" class="stock-success" role="status">{{ mensagemEstoque }}</p>
+          <p v-if="erroEstoque" class="stock-error" role="alert">
+            {{ erroEstoque }}
+            <button class="inline-retry" type="button" @click="carregarResumoEstoque">
+              Tentar novamente
+            </button>
+          </p>
+        </div>
+        <form class="minimum-form" @submit.prevent="salvarMinimoEstoque">
+          <div class="field">
+            <label for="minimo-estoque">Quantidade mínima</label>
+            <input
+              id="minimo-estoque"
+              v-model="minimoEstoqueForm"
+              type="number"
+              min="0"
+              step="1"
+              required
+              :disabled="!resumoEstoque || salvandoMinimo"
+            />
+          </div>
+          <button
+            class="primary-button"
+            type="submit"
+            :disabled="!resumoEstoque || salvandoMinimo"
+          >
+            {{ salvandoMinimo ? 'Salvando...' : 'Salvar mínimo' }}
+          </button>
+          <p v-if="erroMinimo" class="stock-error" role="alert">{{ erroMinimo }}</p>
+        </form>
+      </div>
+      <p v-if="resumoEstoque && !resumoEstoque.abaixoDoMinimo" class="stock-ok">
+        Estoque dentro do mínimo configurado.
+      </p>
+    </section>
 
     <section class="card filter-card" aria-label="Filtros de veículos">
       <form class="filters" @submit.prevent="aplicarFiltros">
@@ -314,7 +490,7 @@ onMounted(carregarVeiculos)
                   {{ statusLegivel(veiculo.status) }}
                 </span>
               </td>
-              <td v-if="podeGerenciar">
+              <td v-if="podeGerenciar" class="vehicle-actions">
                 <RouterLink
                   class="button button--secondary"
                   :to="{
@@ -324,16 +500,191 @@ onMounted(carregarVeiculos)
                 >
                   Editar
                 </RouterLink>
+                <button
+                  v-if="podeAlterarStatus(veiculo)"
+                  class="button button--secondary status-change-button"
+                  type="button"
+                  @click="abrirConfirmacaoStatus(veiculo)"
+                >
+                  Alterar status
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </section>
+
+    <div v-if="veiculoSelecionado" class="dialog-backdrop">
+      <section
+        class="status-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirmacao-status-titulo"
+      >
+        <span class="eyebrow">CONFIRMAÇÃO DE ALTERAÇÃO</span>
+        <h2 id="confirmacao-status-titulo">Alterar status do veículo</h2>
+        <p>
+          {{ veiculoSelecionado.marca }} {{ veiculoSelecionado.modelo }}
+          ({{ veiculoSelecionado.ano }})
+        </p>
+        <div class="field">
+          <label for="novo-status-veiculo">Novo status</label>
+          <select id="novo-status-veiculo" v-model="statusSelecionado">
+            <option
+              v-for="status in statusPermitidos(veiculoSelecionado.status)"
+              :key="status"
+              :value="status"
+            >
+              {{ statusLegivel(status) }}
+            </option>
+          </select>
+        </div>
+        <p class="confirmation-message">
+          Tem certeza de que deseja alterar o status de
+          <strong>{{ statusLegivel(veiculoSelecionado.status) }}</strong> para
+          <strong>{{ statusLegivel(statusSelecionado) }}</strong>?
+        </p>
+        <p v-if="erroStatus" class="stock-error" role="alert">{{ erroStatus }}</p>
+        <div class="dialog-actions">
+          <button
+            class="secondary-button"
+            type="button"
+            :disabled="salvandoStatus"
+            @click="cancelarAlteracaoStatus"
+          >
+            Cancelar
+          </button>
+          <button
+            class="primary-button"
+            type="button"
+            :disabled="salvandoStatus"
+            @click="confirmarAlteracaoStatus"
+          >
+            {{ salvandoStatus ? 'Confirmando...' : 'Confirmar' }}
+          </button>
+        </div>
+      </section>
+    </div>
   </section>
 </template>
 
 <style scoped>
+.stock-card {
+  margin-bottom: 1.25rem;
+  padding: 1.25rem;
+}
+
+.stock-overview {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.stock-overview h2 {
+  margin: 0.4rem 0;
+  color: #183b5f;
+  font-size: 1.1rem;
+}
+
+.stock-overview p {
+  margin: 0.25rem 0;
+  color: #4b5d78;
+}
+
+.minimum-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  min-width: 290px;
+}
+
+.minimum-form .field {
+  flex: 1;
+}
+
+.stock-warning,
+.stock-ok,
+.stock-success,
+.stock-error {
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.6rem;
+  font-weight: 600;
+}
+
+.stock-warning {
+  color: #835800 !important;
+  background: #fff3cd;
+  border: 1px solid #f1d78c;
+}
+
+.stock-ok {
+  margin-top: 1rem !important;
+  color: #1f7a4c !important;
+  background: #eafaf2;
+}
+
+.stock-success {
+  color: #1f7a4c !important;
+  background: #eafaf2;
+}
+
+.stock-error {
+  color: #9e2c2c !important;
+  background: #fff2f0;
+}
+
+.vehicle-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(13, 27, 42, 0.55);
+}
+
+.status-dialog {
+  width: min(100%, 440px);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(13, 27, 42, 0.24);
+}
+
+.status-dialog h2 {
+  margin: 0.4rem 0;
+  color: #183b5f;
+}
+
+.status-dialog > p {
+  color: #4b5d78;
+}
+
+.confirmation-message {
+  margin: 1rem 0;
+  line-height: 1.5;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.dialog-actions button:disabled,
+.minimum-form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .page-heading {
   display: flex;
   justify-content: space-between;
@@ -551,6 +902,13 @@ onMounted(carregarVeiculos)
 }
 
 @media (max-width: 640px) {
+  .stock-overview,
+  .minimum-form {
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+  }
+
   .page-heading {
     margin-bottom: 1rem;
   }

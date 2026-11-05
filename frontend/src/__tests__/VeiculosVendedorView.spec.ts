@@ -1,10 +1,21 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import VeiculosVendedorView from '@/views/VeiculosVendedorView.vue'
-import { listarVeiculos } from '@/services/veiculos.service'
+import {
+  atualizarMinimoEstoque,
+  atualizarStatusVeiculo,
+  listarVeiculos,
+  obterResumoEstoque,
+} from '@/services/veiculos.service'
+import { createPinia, setActivePinia } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/services/veiculos.service', () => ({
+  atualizarMinimoEstoque: vi.fn(),
+  atualizarStatusVeiculo: vi.fn(),
   listarVeiculos: vi.fn(),
+  obterResumoEstoque: vi.fn(),
 }))
 
 const veiculosDeTeste = [
@@ -75,16 +86,35 @@ const veiculosDeTeste = [
 ]
 
 describe('VeiculosVendedorView', () => {
+  let pinia: ReturnType<typeof createPinia>
+  let router: ReturnType<typeof createRouter>
+
   beforeEach(() => {
+    pinia = createPinia()
+    setActivePinia(pinia)
+    useAuthStore().usuario = { id: 2, cpf: '10987654321', perfil: 'vendedor' }
+    router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }],
+    })
     vi.mocked(listarVeiculos).mockReset()
+    vi.mocked(atualizarStatusVeiculo).mockReset()
+    vi.mocked(atualizarMinimoEstoque).mockReset()
+    vi.mocked(obterResumoEstoque).mockReset()
   })
+
+  function montarView() {
+    return mount(VeiculosVendedorView, {
+      global: { plugins: [pinia, router] },
+    })
+  }
 
   it('carrega veículos e aplica filtros combinados', async () => {
     vi.mocked(listarVeiculos)
       .mockResolvedValueOnce(veiculosDeTeste)
       .mockResolvedValueOnce(veiculosDeTeste.filter((veiculo) => veiculo.modelo === 'Hilux'))
 
-    const wrapper = mount(VeiculosVendedorView)
+    const wrapper = montarView()
     await flushPromises()
 
     expect(wrapper.text()).toContain('Toyota')
@@ -124,7 +154,7 @@ describe('VeiculosVendedorView', () => {
   it('valida faixa de preço e limpa os filtros', async () => {
     vi.mocked(listarVeiculos).mockResolvedValue(veiculosDeTeste)
 
-    const wrapper = mount(VeiculosVendedorView)
+    const wrapper = montarView()
     await flushPromises()
 
     await wrapper.get('#preco-min').setValue('200000')
@@ -148,7 +178,7 @@ describe('VeiculosVendedorView', () => {
       .mockResolvedValueOnce(veiculosDeTeste)
       .mockResolvedValueOnce([])
 
-    const wrapper = mount(VeiculosVendedorView)
+    const wrapper = montarView()
     await flushPromises()
 
     await wrapper.get('#modelo-veiculo').setValue('SemResultado')
@@ -156,5 +186,83 @@ describe('VeiculosVendedorView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Nenhum veículo corresponde aos filtros selecionados.')
+  })
+
+  it('confirma a alteração de status antes de enviar e atualiza a listagem', async () => {
+    useAuthStore().usuario = { id: 1, cpf: '12345678901', perfil: 'admin' }
+    vi.mocked(listarVeiculos)
+      .mockResolvedValueOnce(veiculosDeTeste)
+      .mockResolvedValueOnce([
+        { ...veiculosDeTeste[0], status: 'em_manutencao' },
+        ...veiculosDeTeste.slice(1),
+      ])
+    vi.mocked(obterResumoEstoque).mockResolvedValue({
+      quantidadeDisponivel: 1,
+      quantidadeMinima: 10,
+      abaixoDoMinimo: true,
+    })
+    vi.mocked(atualizarStatusVeiculo).mockResolvedValue({
+      ...veiculosDeTeste[0],
+      status: 'em_manutencao',
+    })
+
+    const wrapper = montarView()
+    await flushPromises()
+    await wrapper.get('.status-change-button').trigger('click')
+
+    expect(wrapper.text()).toContain('Disponível para Em manutenção')
+    expect(atualizarStatusVeiculo).not.toHaveBeenCalled()
+    await wrapper.get('[role="dialog"] button.secondary-button').trigger('click')
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(atualizarStatusVeiculo).not.toHaveBeenCalled()
+
+    await wrapper.get('.status-change-button').trigger('click')
+    await wrapper.get('[role="dialog"] button.primary-button').trigger('click')
+    await flushPromises()
+
+    expect(atualizarStatusVeiculo).toHaveBeenCalledWith(1, 'em_manutencao')
+    expect(wrapper.findAll('tbody tr')[0].text()).toContain('Em manutenção')
+    expect(wrapper.text()).toContain('Status do veículo Toyota Corolla atualizado')
+    expect(listarVeiculos).toHaveBeenLastCalledWith({})
+  })
+
+  it('não mostra controles administrativos para o vendedor', async () => {
+    useAuthStore().usuario = { id: 2, cpf: '10987654321', perfil: 'vendedor' }
+    vi.mocked(listarVeiculos).mockResolvedValue(veiculosDeTeste)
+
+    const wrapper = montarView()
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('Alterar status')
+    expect(wrapper.text()).not.toContain('Quantidade mínima')
+    expect(obterResumoEstoque).not.toHaveBeenCalled()
+  })
+
+  it('permite ao administrador configurar e ver o alerta do mínimo de estoque', async () => {
+    useAuthStore().usuario = { id: 1, cpf: '12345678901', perfil: 'admin' }
+    vi.mocked(listarVeiculos).mockResolvedValue(veiculosDeTeste)
+    vi.mocked(obterResumoEstoque).mockResolvedValue({
+      quantidadeDisponivel: 7,
+      quantidadeMinima: 10,
+      abaixoDoMinimo: true,
+    })
+    vi.mocked(atualizarMinimoEstoque).mockResolvedValue({
+      quantidadeDisponivel: 7,
+      quantidadeMinima: 5,
+      abaixoDoMinimo: false,
+    })
+
+    const wrapper = montarView()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Estoque baixo!')
+    expect(wrapper.text()).toContain('apenas 7 veículos disponíveis')
+    await wrapper.get('#minimo-estoque').setValue('5')
+    await wrapper.get('.minimum-form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(atualizarMinimoEstoque).toHaveBeenCalledWith(5)
+    expect(wrapper.text()).toContain('Estoque dentro do mínimo configurado.')
+    expect(wrapper.text()).toContain('Quantidade mínima de estoque atualizada.')
   })
 })

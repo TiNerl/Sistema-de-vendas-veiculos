@@ -61,6 +61,8 @@ O cadastro de veículos está disponível para administradores na interface web.
 
 A mesma tela de **Estoque de Veículos** é acessível a administradores (`/admin/veiculos`) e vendedores (`/vendedor/veiculos`). A consulta usa `GET /veiculos`, protegida por JWT e pelos perfis `admin` e `vendedor`; os parâmetros opcionais `marca`, `modelo`, `precoMin`, `precoMax`, `anoMin`, `anoMax`, `combustivel` e `status` são combinados na consulta ao banco. O endpoint retorna apenas os campos necessários à listagem. Os status válidos são `disponivel`, `reservado`, `vendido` e `em_manutencao`. A entidade de veículos ainda não possui campo de foto, portanto a interface não exibe uma imagem fictícia.
 
+Administradores podem alterar entre `disponivel` e `em_manutencao` pela listagem, após confirmação; vendedores apenas consultam os status. `PATCH /veiculos/:id/status` é protegido no backend e não permite alterar manualmente estados de reserva ou venda nem veículos com venda concluída. A tela administrativa também consulta `GET /veiculos/estoque/resumo` e configura o limite por `PATCH /veiculos/estoque/minimo`; a quantidade disponível considera somente veículos com status `disponivel`, e o limite inicial é 10. O sistema ainda não possui cadastro ou cancelamento de reservas, portanto o estado `reservado` permanece bloqueado para alteração manual até que exista um processo próprio.
+
 **Documentos-base do projeto:**
 
 | Documento | Onde está | Situação |
