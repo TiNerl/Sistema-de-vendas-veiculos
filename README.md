@@ -57,6 +57,10 @@ Centralizar em uma aplicação web o processo de venda de veículos de uma conce
 
 O cadastro de veículos está disponível para administradores na interface web. Após entrar com CPF e senha, o administrador informa marca, modelo, versão, ano, cor, quilometragem, combustível, câmbio, placa, chassi, RENAVAM e preço. A API recebe o cadastro em `POST /veiculos` com token Bearer de administrador e valida os dados, impedindo a repetição de placa, chassi ou RENAVAM.
 
+### Listagem do estoque
+
+A mesma tela de **Estoque de Veículos** é acessível a administradores (`/admin/veiculos`) e vendedores (`/vendedor/veiculos`). A consulta usa `GET /veiculos`, protegida por JWT e pelos perfis `admin` e `vendedor`; os parâmetros opcionais `marca`, `modelo`, `precoMin`, `precoMax`, `anoMin`, `anoMax`, `combustivel` e `status` são combinados na consulta ao banco. O endpoint retorna apenas os campos necessários à listagem. Os status válidos são `disponivel`, `reservado`, `vendido` e `em_manutencao`. A entidade de veículos ainda não possui campo de foto, portanto a interface não exibe uma imagem fictícia.
+
 **Documentos-base do projeto:**
 
 | Documento | Onde está | Situação |

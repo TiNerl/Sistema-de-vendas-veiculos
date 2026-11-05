@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { isAxiosError } from 'axios'
-import { listarVeiculos } from '@/services/veiculos.service'
+import { listarVeiculos, type FiltrosVeiculos } from '@/services/veiculos.service'
 import {
   opcoesCombustivel,
   opcoesStatus,
@@ -11,19 +11,17 @@ import {
 } from '@/types/veiculo'
 
 type FiltrosVeiculo = {
-  busca: string
   marca: string
   modelo: string
-  precoMin: string
-  precoMax: string
-  anoMin: string
-  anoMax: string
+  precoMin: string | number
+  precoMax: string | number
+  anoMin: string | number
+  anoMax: string | number
   combustivel: string
   status: StatusVeiculo | ''
 }
 
 const filtrosPadrao: FiltrosVeiculo = {
-  busca: '',
   marca: '',
   modelo: '',
   precoMin: '',
@@ -37,19 +35,14 @@ const filtrosPadrao: FiltrosVeiculo = {
 const veiculos = ref<Veiculo[]>([])
 const filtros = ref<FiltrosVeiculo>({ ...filtrosPadrao })
 const filtrosAplicados = ref<FiltrosVeiculo>({ ...filtrosPadrao })
+const veiculosFiltrados = computed(() => veiculos.value)
 const carregando = ref(false)
 const erro = ref('')
 const mensagemValidacao = ref('')
 const ultimaConsulta = ref(0)
 
-const marcasDisponiveis = computed(() =>
-  [...new Set(veiculos.value.map((veiculo) => veiculo.marca).filter(Boolean))].sort((a, b) =>
-    a.localeCompare(b, 'pt-BR'),
-  ),
-)
-
-function parseNumeroOpcional(valor: string): number {
-  const texto = valor.trim()
+function parseNumeroOpcional(valor: string | number): number {
+  const texto = String(valor).trim()
   if (!texto) {
     return Number.NaN
   }
@@ -57,46 +50,6 @@ function parseNumeroOpcional(valor: string): number {
   const numero = Number(texto)
   return Number.isFinite(numero) ? numero : Number.NaN
 }
-
-const veiculosFiltrados = computed(() => {
-  const filtrosAtuais = filtrosAplicados.value
-  const termoBusca = filtrosAtuais.busca.trim().toLocaleLowerCase('pt-BR')
-
-  return veiculos.value.filter((veiculo) => {
-    const buscaValida =
-      !termoBusca ||
-      `${veiculo.marca} ${veiculo.modelo} ${veiculo.versao} ${veiculo.placa}`
-        .toLocaleLowerCase('pt-BR')
-        .includes(termoBusca)
-
-    const marca =
-      !filtrosAtuais.marca ||
-      veiculo.marca.toLocaleLowerCase('pt-BR') === filtrosAtuais.marca.toLocaleLowerCase('pt-BR')
-
-    const modelo =
-      !filtrosAtuais.modelo ||
-      veiculo.modelo.toLocaleLowerCase('pt-BR').includes(filtrosAtuais.modelo.trim().toLocaleLowerCase('pt-BR'))
-
-    const precoMin = parseNumeroOpcional(filtrosAtuais.precoMin)
-    const precoMax = parseNumeroOpcional(filtrosAtuais.precoMax)
-    const precoValido =
-      (Number.isNaN(precoMin) || Number(veiculo.preco) >= precoMin) &&
-      (Number.isNaN(precoMax) || Number(veiculo.preco) <= precoMax)
-
-    const anoMin = parseNumeroOpcional(filtrosAtuais.anoMin)
-    const anoMax = parseNumeroOpcional(filtrosAtuais.anoMax)
-    const anoValido =
-      (Number.isNaN(anoMin) || veiculo.ano >= anoMin) &&
-      (Number.isNaN(anoMax) || veiculo.ano <= anoMax)
-
-    const combustivel =
-      !filtrosAtuais.combustivel || veiculo.combustivel === filtrosAtuais.combustivel
-
-    const status = !filtrosAtuais.status || veiculo.status === filtrosAtuais.status
-
-    return buscaValida && marca && modelo && precoValido && anoValido && combustivel && status
-  })
-})
 
 function validarFiltros(): string | null {
   const precoMin = parseNumeroOpcional(filtros.value.precoMin)
@@ -115,7 +68,27 @@ function validarFiltros(): string | null {
   return null
 }
 
-function aplicarFiltros() {
+function filtrosParaConsulta(): FiltrosVeiculos {
+  const atuais = filtrosAplicados.value
+  const resultado: FiltrosVeiculos = {}
+  const precoMin = parseNumeroOpcional(atuais.precoMin)
+  const precoMax = parseNumeroOpcional(atuais.precoMax)
+  const anoMin = parseNumeroOpcional(atuais.anoMin)
+  const anoMax = parseNumeroOpcional(atuais.anoMax)
+
+  if (atuais.marca.trim()) resultado.marca = atuais.marca.trim()
+  if (atuais.modelo.trim()) resultado.modelo = atuais.modelo.trim()
+  if (!Number.isNaN(precoMin)) resultado.precoMin = precoMin
+  if (!Number.isNaN(precoMax)) resultado.precoMax = precoMax
+  if (!Number.isNaN(anoMin)) resultado.anoMin = anoMin
+  if (!Number.isNaN(anoMax)) resultado.anoMax = anoMax
+  if (atuais.combustivel) resultado.combustivel = atuais.combustivel
+  if (atuais.status) resultado.status = atuais.status
+
+  return resultado
+}
+
+async function aplicarFiltros() {
   const erroValidacao = validarFiltros()
 
   if (erroValidacao) {
@@ -125,28 +98,30 @@ function aplicarFiltros() {
 
   mensagemValidacao.value = ''
   filtrosAplicados.value = { ...filtros.value }
+  await carregarVeiculos(filtrosParaConsulta())
 }
 
-function limparFiltros() {
+async function limparFiltros() {
   filtros.value = { ...filtrosPadrao }
   filtrosAplicados.value = { ...filtrosPadrao }
   mensagemValidacao.value = ''
+  await carregarVeiculos()
 }
 
 function existeBuscaAplicada(): boolean {
   return Object.entries(filtrosAplicados.value).some(([chave, valor]) => {
     if (chave === 'status') return Boolean(valor)
-    return typeof valor === 'string' && valor.trim() !== ''
+    return typeof valor === 'number' || (typeof valor === 'string' && valor.trim() !== '')
   })
 }
 
-async function carregarVeiculos() {
+async function carregarVeiculos(filtrosConsulta: FiltrosVeiculos = {}) {
   const requisicaoAtual = ++ultimaConsulta.value
   carregando.value = true
   erro.value = ''
 
   try {
-    const dados = await listarVeiculos()
+    const dados = await listarVeiculos(filtrosConsulta)
     if (requisicaoAtual !== ultimaConsulta.value) {
       return
     }
@@ -194,27 +169,28 @@ onMounted(carregarVeiculos)
   <section>
     <div class="page-heading">
       <div>
-        <span class="eyebrow">ÁREA DO VENDEDOR</span>
-        <h1>Veículos</h1>
+        <span class="eyebrow">ESTOQUE DE VEÍCULOS</span>
+        <h1>Estoque de Veículos</h1>
         <p>Consulte os veículos cadastrados e filtre o estoque por critérios específicos.</p>
       </div>
     </div>
 
     <div v-if="erro" class="alert alert--error notice" role="alert">
       {{ erro }}
-      <button class="inline-retry" type="button" @click="carregarVeiculos">Tentar novamente</button>
+      <button class="inline-retry" type="button" @click="carregarVeiculos()">Tentar novamente</button>
     </div>
 
     <section class="card filter-card" aria-label="Filtros de veículos">
       <form class="filters" @submit.prevent="aplicarFiltros">
         <div class="field">
           <label for="marca-veiculo">Marca</label>
-          <select id="marca-veiculo" v-model="filtros.marca">
-            <option value="">Todas as marcas</option>
-            <option v-for="marca in marcasDisponiveis" :key="marca" :value="marca">
-              {{ marca }}
-            </option>
-          </select>
+          <input
+            id="marca-veiculo"
+            v-model="filtros.marca"
+            type="text"
+            placeholder="Pesquise pela marca"
+            autocomplete="off"
+          />
         </div>
 
         <div class="field">
@@ -298,7 +274,7 @@ onMounted(carregarVeiculos)
             <tr v-for="veiculo in veiculosFiltrados" :key="veiculo.id_veiculo">
               <td class="user-primary">
                 <div class="vehicle-title">{{ veiculo.marca }} {{ veiculo.modelo }}</div>
-                <small>{{ veiculo.versao }} · {{ veiculo.placa }}</small>
+                <small>{{ veiculo.versao }}</small>
               </td>
               <td>{{ veiculo.ano }}</td>
               <td>{{ rotuloCombustivel(veiculo.combustivel) }}</td>

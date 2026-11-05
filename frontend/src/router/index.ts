@@ -70,7 +70,7 @@ const router = createRouter({
           meta: {
             requerAutenticacao: true,
             apenasAdministrador: true,
-            titulo: 'Veículos / estoque',
+            titulo: 'Estoque de Veículos',
           },
         },
         {
@@ -148,7 +148,7 @@ const router = createRouter({
           path: 'veiculos',
           name: 'vendedor-veiculos',
           component: VeiculosVendedorView,
-          meta: { titulo: 'Veículos / estoque' },
+          meta: { titulo: 'Estoque de Veículos' },
         },
         {
           path: 'vendas',

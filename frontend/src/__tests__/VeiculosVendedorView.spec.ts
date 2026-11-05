@@ -56,6 +56,22 @@ const veiculosDeTeste = [
     preco: '265000.00',
     status: 'vendido' as const,
   },
+  {
+    id_veiculo: 4,
+    marca: 'Fiat',
+    modelo: 'Pulse',
+    versao: 'Audace',
+    ano: 2022,
+    cor: 'Cinza',
+    quilometragem: 25000,
+    combustivel: 'etanol',
+    cambio: 'automatico',
+    placa: 'JKL0M12',
+    chassi: '45678901234567890',
+    renavam: '45678901234',
+    preco: '98000.00',
+    status: 'em_manutencao' as const,
+  },
 ]
 
 describe('VeiculosVendedorView', () => {
@@ -64,23 +80,45 @@ describe('VeiculosVendedorView', () => {
   })
 
   it('carrega veículos e aplica filtros combinados', async () => {
-    vi.mocked(listarVeiculos).mockResolvedValue(veiculosDeTeste)
+    vi.mocked(listarVeiculos)
+      .mockResolvedValueOnce(veiculosDeTeste)
+      .mockResolvedValueOnce(veiculosDeTeste.filter((veiculo) => veiculo.modelo === 'Hilux'))
 
     const wrapper = mount(VeiculosVendedorView)
     await flushPromises()
 
     expect(wrapper.text()).toContain('Toyota')
     expect(wrapper.text()).toMatch(/R\$\s*145\.000,00/)
-    expect(wrapper.findAll('tbody tr')).toHaveLength(3)
+    expect(wrapper.findAll('tbody tr')).toHaveLength(4)
+    expect(wrapper.text()).toContain('Disponível')
+    expect(wrapper.text()).toContain('Reservado')
+    expect(wrapper.text()).toContain('Vendido')
+    expect(wrapper.text()).toContain('Em manutenção')
 
     await wrapper.get('#marca-veiculo').setValue('Toyota')
     await wrapper.get('#modelo-veiculo').setValue('Hilux')
+    await wrapper.get('#preco-min').setValue('200000')
+    await wrapper.get('#preco-max').setValue('300000')
+    await wrapper.get('#ano-min').setValue('2020')
+    await wrapper.get('#ano-max').setValue('2022')
+    await wrapper.get('#combustivel-veiculo').setValue('diesel')
     await wrapper.get('#filtro-status-veiculos').setValue('vendido')
     await wrapper.get('form').trigger('submit.prevent')
+    await flushPromises()
 
     expect(wrapper.findAll('tbody tr')).toHaveLength(1)
     expect(wrapper.text()).toContain('Hilux')
     expect(wrapper.text()).toContain('Vendido')
+    expect(listarVeiculos).toHaveBeenLastCalledWith({
+      marca: 'Toyota',
+      modelo: 'Hilux',
+      precoMin: 200000,
+      precoMax: 300000,
+      anoMin: 2020,
+      anoMax: 2022,
+      combustivel: 'diesel',
+      status: 'vendido',
+    })
   })
 
   it('valida faixa de preço e limpa os filtros', async () => {
@@ -92,23 +130,30 @@ describe('VeiculosVendedorView', () => {
     await wrapper.get('#preco-min').setValue('200000')
     await wrapper.get('#preco-max').setValue('150000')
     await wrapper.get('form').trigger('submit.prevent')
+    await flushPromises()
 
     expect(wrapper.text()).toContain('O preço mínimo não pode ser maior que o preço máximo.')
 
+    vi.mocked(listarVeiculos).mockResolvedValueOnce(veiculosDeTeste)
     await wrapper.get('button[type="button"]').trigger('click')
+    await flushPromises()
     expect((wrapper.get('#preco-min').element as HTMLInputElement).value).toBe('')
     expect((wrapper.get('#preco-max').element as HTMLInputElement).value).toBe('')
-    expect(wrapper.findAll('tbody tr')).toHaveLength(3)
+    expect(wrapper.findAll('tbody tr')).toHaveLength(4)
+    expect(listarVeiculos).toHaveBeenLastCalledWith({})
   })
 
   it('exibe mensagem quando não há resultados para os filtros', async () => {
-    vi.mocked(listarVeiculos).mockResolvedValue(veiculosDeTeste)
+    vi.mocked(listarVeiculos)
+      .mockResolvedValueOnce(veiculosDeTeste)
+      .mockResolvedValueOnce([])
 
     const wrapper = mount(VeiculosVendedorView)
     await flushPromises()
 
     await wrapper.get('#modelo-veiculo').setValue('SemResultado')
     await wrapper.get('form').trigger('submit.prevent')
+    await flushPromises()
 
     expect(wrapper.text()).toContain('Nenhum veículo corresponde aos filtros selecionados.')
   })
