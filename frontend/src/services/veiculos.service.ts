@@ -12,12 +12,6 @@ export type FiltrosVeiculos = {
     status?: StatusVeiculo
 }
 
-export type ResumoEstoque = {
-    quantidadeDisponivel: number
-    quantidadeMinima: number
-    abaixoDoMinimo: boolean
-}
-
 export async function listarVeiculos(filtros: FiltrosVeiculos = {}): Promise<Veiculo[]> {
     const resposta = await api.get<Veiculo[]>('/veiculos', { params: filtros })
     return resposta.data
@@ -53,16 +47,6 @@ export async function atualizarStatusVeiculo(id: number, status: StatusVeiculo):
     return resposta.data
 }
 
-export async function obterResumoEstoque(): Promise<ResumoEstoque> {
-    const resposta = await api.get<ResumoEstoque>('/veiculos/estoque/resumo')
-    return resposta.data
-}
-
-export async function atualizarMinimoEstoque(
-    quantidadeMinima: number,
-): Promise<ResumoEstoque> {
-    const resposta = await api.patch<ResumoEstoque>('/veiculos/estoque/minimo', {
-        quantidadeMinima,
-    })
-    return resposta.data
+export async function excluirVeiculo(id: number): Promise<void> {
+    await api.delete(`/veiculos/${id}`)
 }

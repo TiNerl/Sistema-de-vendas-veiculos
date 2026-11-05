@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { isAxiosError } from 'axios'
 import { useRoute } from 'vue-router'
 import {
-  atualizarMinimoEstoque,
   atualizarStatusVeiculo,
+  excluirVeiculo,
   listarVeiculos,
-  obterResumoEstoque,
   type FiltrosVeiculos,
-  type ResumoEstoque,
 } from '@/services/veiculos.service'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -44,7 +42,6 @@ const filtrosPadrao: FiltrosVeiculo = {
 const route = useRoute()
 const auth = useAuthStore()
 const veiculos = ref<Veiculo[]>([])
-const resumoEstoque = ref<ResumoEstoque | null>(null)
 const filtros = ref<FiltrosVeiculo>({ ...filtrosPadrao })
 const filtrosAplicados = ref<FiltrosVeiculo>({ ...filtrosPadrao })
 const veiculosFiltrados = computed(() => veiculos.value)
@@ -67,15 +64,14 @@ const rotaLista = computed(() =>
 const mensagemValidacao = ref('')
 const ultimaConsulta = ref(0)
 const veiculoSelecionado = ref<Veiculo | null>(null)
+const veiculoParaExcluir = ref<Veiculo | null>(null)
 const statusSelecionado = ref<StatusVeiculo>('em_manutencao')
 const erroStatus = ref('')
+const erroExclusao = ref('')
 const salvandoStatus = ref(false)
-const erroEstoque = ref('')
-const erroMinimo = ref('')
-const mensagemEstoque = ref('')
 const mensagemStatus = ref('')
-const minimoEstoqueForm = ref('10')
-const salvandoMinimo = ref(false)
+const mensagemExclusao = ref('')
+const excluindo = ref(false)
 
 function parseNumeroOpcional(valor: string | number): number {
   const texto = String(valor).trim()
@@ -230,9 +226,7 @@ async function confirmarAlteracaoStatus() {
     await atualizarStatusVeiculo(veiculo.id_veiculo, statusSelecionado.value)
     mensagemStatus.value = `Status do veículo ${veiculo.marca} ${veiculo.modelo} atualizado para ${statusLegivel(statusSelecionado.value)}.`
     veiculoSelecionado.value = null
-    mensagemEstoque.value = ''
     await carregarVeiculos(filtrosParaConsulta())
-    if (ehAdministrador.value) await carregarResumoEstoque()
   } catch (error) {
     erroStatus.value = mensagemErro(error, 'Não foi possível alterar o status do veículo.')
   } finally {
@@ -240,42 +234,35 @@ async function confirmarAlteracaoStatus() {
   }
 }
 
-async function carregarResumoEstoque() {
-  erroEstoque.value = ''
-
-  try {
-    resumoEstoque.value = await obterResumoEstoque()
-    minimoEstoqueForm.value = String(resumoEstoque.value.quantidadeMinima)
-  } catch (error) {
-    erroEstoque.value = mensagemErro(error, 'Não foi possível carregar o resumo do estoque.')
-  }
+function abrirConfirmacaoExclusao(veiculo: Veiculo) {
+  veiculoParaExcluir.value = veiculo
+  erroExclusao.value = ''
+  mensagemExclusao.value = ''
 }
 
-function atualizarResumoAoRetomar() {
-  if (ehAdministrador.value && document.visibilityState === 'visible') {
-    void carregarResumoEstoque()
-  }
+function cancelarExclusao() {
+  veiculoParaExcluir.value = null
+  erroExclusao.value = ''
 }
 
-async function salvarMinimoEstoque() {
-  const quantidadeMinima = Number(minimoEstoqueForm.value)
-  if (!Number.isInteger(quantidadeMinima) || quantidadeMinima < 0) {
-    erroMinimo.value = 'Informe uma quantidade mínima inteira igual ou maior que zero.'
-    return
-  }
+async function confirmarExclusao() {
+  const veiculo = veiculoParaExcluir.value
+  if (!veiculo?.id_veiculo) return
 
-  salvandoMinimo.value = true
-  erroMinimo.value = ''
-  mensagemEstoque.value = ''
+  excluindo.value = true
+  erroExclusao.value = ''
 
   try {
-    resumoEstoque.value = await atualizarMinimoEstoque(quantidadeMinima)
-    minimoEstoqueForm.value = String(resumoEstoque.value.quantidadeMinima)
-    mensagemEstoque.value = 'Quantidade mínima de estoque atualizada.'
+    await excluirVeiculo(veiculo.id_veiculo)
+    veiculos.value = veiculos.value.filter(
+      (item) => item.id_veiculo !== veiculo.id_veiculo,
+    )
+    mensagemExclusao.value = `Veículo ${veiculo.marca} ${veiculo.modelo} excluído com sucesso.`
+    veiculoParaExcluir.value = null
   } catch (error) {
-    erroMinimo.value = mensagemErro(error, 'Não foi possível atualizar o mínimo de estoque.')
+    erroExclusao.value = mensagemErro(error, 'Não foi possível excluir o veículo.')
   } finally {
-    salvandoMinimo.value = false
+    excluindo.value = false
   }
 }
 
@@ -288,14 +275,6 @@ function precoLegivel(preco: Veiculo['preco']): string {
 
 onMounted(() => {
   void carregarVeiculos()
-  if (ehAdministrador.value) void carregarResumoEstoque()
-  window.addEventListener('focus', atualizarResumoAoRetomar)
-  document.addEventListener('visibilitychange', atualizarResumoAoRetomar)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('focus', atualizarResumoAoRetomar)
-  document.removeEventListener('visibilitychange', atualizarResumoAoRetomar)
 })
 </script>
 
@@ -329,60 +308,9 @@ onUnmounted(() => {
       {{ mensagemStatus }}
     </div>
 
-    <section
-      v-if="ehAdministrador"
-      class="card stock-card"
-      aria-label="Resumo e configuração do estoque"
-      aria-live="polite"
-    >
-      <div class="stock-overview">
-        <div>
-          <span class="eyebrow">ALERTA DE ESTOQUE MÍNIMO</span>
-          <h2>Veículos disponíveis</h2>
-          <p v-if="resumoEstoque">
-            {{ resumoEstoque.quantidadeDisponivel }} disponível(is) · mínimo configurado:
-            {{ resumoEstoque.quantidadeMinima }}
-          </p>
-          <p v-else-if="!erroEstoque">Carregando resumo do estoque...</p>
-          <p v-if="resumoEstoque?.abaixoDoMinimo" class="stock-warning" role="alert">
-            Estoque baixo! Existem apenas {{ resumoEstoque.quantidadeDisponivel }} veículos
-            disponíveis. O mínimo configurado é de {{ resumoEstoque.quantidadeMinima }}.
-          </p>
-          <p v-if="mensagemEstoque" class="stock-success" role="status">{{ mensagemEstoque }}</p>
-          <p v-if="erroEstoque" class="stock-error" role="alert">
-            {{ erroEstoque }}
-            <button class="inline-retry" type="button" @click="carregarResumoEstoque">
-              Tentar novamente
-            </button>
-          </p>
-        </div>
-        <form class="minimum-form" @submit.prevent="salvarMinimoEstoque">
-          <div class="field">
-            <label for="minimo-estoque">Quantidade mínima</label>
-            <input
-              id="minimo-estoque"
-              v-model="minimoEstoqueForm"
-              type="number"
-              min="0"
-              step="1"
-              required
-              :disabled="!resumoEstoque || salvandoMinimo"
-            />
-          </div>
-          <button
-            class="primary-button"
-            type="submit"
-            :disabled="!resumoEstoque || salvandoMinimo"
-          >
-            {{ salvandoMinimo ? 'Salvando...' : 'Salvar mínimo' }}
-          </button>
-          <p v-if="erroMinimo" class="stock-error" role="alert">{{ erroMinimo }}</p>
-        </form>
-      </div>
-      <p v-if="resumoEstoque && !resumoEstoque.abaixoDoMinimo" class="stock-ok">
-        Estoque dentro do mínimo configurado.
-      </p>
-    </section>
+    <div v-if="mensagemExclusao" class="alert alert--success notice" role="status">
+      {{ mensagemExclusao }}
+    </div>
 
     <section class="card filter-card" aria-label="Filtros de veículos">
       <form class="filters" @submit.prevent="aplicarFiltros">
@@ -508,6 +436,14 @@ onUnmounted(() => {
                 >
                   Alterar status
                 </button>
+                <button
+                  v-if="ehAdministrador"
+                  class="button button--danger vehicle-delete-button"
+                  type="button"
+                  @click="abrirConfirmacaoExclusao(veiculo)"
+                >
+                  Excluir
+                </button>
               </td>
             </tr>
           </tbody>
@@ -545,7 +481,7 @@ onUnmounted(() => {
           <strong>{{ statusLegivel(veiculoSelecionado.status) }}</strong> para
           <strong>{{ statusLegivel(statusSelecionado) }}</strong>?
         </p>
-        <p v-if="erroStatus" class="stock-error" role="alert">{{ erroStatus }}</p>
+        <p v-if="erroStatus" class="status-error" role="alert">{{ erroStatus }}</p>
         <div class="dialog-actions">
           <button
             class="secondary-button"
@@ -566,73 +502,51 @@ onUnmounted(() => {
         </div>
       </section>
     </div>
+
+    <div v-if="veiculoParaExcluir" class="dialog-backdrop">
+      <section
+        class="status-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirmacao-exclusao-titulo"
+      >
+        <span class="eyebrow">CONFIRMAÇÃO DE EXCLUSÃO</span>
+        <h2 id="confirmacao-exclusao-titulo">Excluir veículo</h2>
+        <p>
+          Confirma a exclusão de {{ veiculoParaExcluir.marca }}
+          {{ veiculoParaExcluir.modelo }} ({{ veiculoParaExcluir.ano }})?
+        </p>
+        <p v-if="erroExclusao" class="status-error" role="alert">{{ erroExclusao }}</p>
+        <div class="dialog-actions">
+          <button
+            class="secondary-button"
+            type="button"
+            :disabled="excluindo"
+            @click="cancelarExclusao"
+          >
+            Cancelar
+          </button>
+          <button
+            class="button button--danger"
+            type="button"
+            :disabled="excluindo"
+            @click="confirmarExclusao"
+          >
+            {{ excluindo ? 'Excluindo...' : 'Confirmar exclusão' }}
+          </button>
+        </div>
+      </section>
+    </div>
   </section>
 </template>
 
 <style scoped>
-.stock-card {
-  margin-bottom: 1.25rem;
-  padding: 1.25rem;
-}
-
-.stock-overview {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1.5rem;
-}
-
-.stock-overview h2 {
-  margin: 0.4rem 0;
-  color: #183b5f;
-  font-size: 1.1rem;
-}
-
-.stock-overview p {
-  margin: 0.25rem 0;
-  color: #4b5d78;
-}
-
-.minimum-form {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.75rem;
-  min-width: 290px;
-}
-
-.minimum-form .field {
-  flex: 1;
-}
-
-.stock-warning,
-.stock-ok,
-.stock-success,
-.stock-error {
+.status-error {
+  color: #9e2c2c !important;
+  background: #fff2f0;
   padding: 0.65rem 0.8rem;
   border-radius: 0.6rem;
   font-weight: 600;
-}
-
-.stock-warning {
-  color: #835800 !important;
-  background: #fff3cd;
-  border: 1px solid #f1d78c;
-}
-
-.stock-ok {
-  margin-top: 1rem !important;
-  color: #1f7a4c !important;
-  background: #eafaf2;
-}
-
-.stock-success {
-  color: #1f7a4c !important;
-  background: #eafaf2;
-}
-
-.stock-error {
-  color: #9e2c2c !important;
-  background: #fff2f0;
 }
 
 .vehicle-actions {
@@ -679,8 +593,7 @@ onUnmounted(() => {
   margin-top: 1.25rem;
 }
 
-.dialog-actions button:disabled,
-.minimum-form button:disabled {
+.dialog-actions button:disabled {
   cursor: wait;
   opacity: 0.65;
 }
@@ -902,13 +815,6 @@ onUnmounted(() => {
 }
 
 @media (max-width: 640px) {
-  .stock-overview,
-  .minimum-form {
-    flex-direction: column;
-    align-items: stretch;
-    min-width: 0;
-  }
-
   .page-heading {
     margin-bottom: 1rem;
   }

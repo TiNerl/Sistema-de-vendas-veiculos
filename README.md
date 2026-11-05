@@ -61,7 +61,7 @@ O cadastro de veículos está disponível para administradores na interface web.
 
 A mesma tela de **Estoque de Veículos** é acessível a administradores (`/admin/veiculos`) e vendedores (`/vendedor/veiculos`). A consulta usa `GET /veiculos`, protegida por JWT e pelos perfis `admin` e `vendedor`; os parâmetros opcionais `marca`, `modelo`, `precoMin`, `precoMax`, `anoMin`, `anoMax`, `combustivel` e `status` são combinados na consulta ao banco. O endpoint retorna apenas os campos necessários à listagem. Os status válidos são `disponivel`, `reservado`, `vendido` e `em_manutencao`. A entidade de veículos ainda não possui campo de foto, portanto a interface não exibe uma imagem fictícia.
 
-Administradores podem alterar entre `disponivel` e `em_manutencao` pela listagem, após confirmação; vendedores apenas consultam os status. `PATCH /veiculos/:id/status` é protegido no backend e não permite alterar manualmente estados de reserva ou venda nem veículos com venda concluída. A tela administrativa também consulta `GET /veiculos/estoque/resumo` e configura o limite por `PATCH /veiculos/estoque/minimo`; a quantidade disponível considera somente veículos com status `disponivel`, e o limite inicial é 10. O sistema ainda não possui cadastro ou cancelamento de reservas, portanto o estado `reservado` permanece bloqueado para alteração manual até que exista um processo próprio.
+Administradores podem alterar entre `disponivel` e `em_manutencao` pela listagem, após confirmação; vendedores apenas consultam os status. `PATCH /veiculos/:id/status` é protegido no backend e não permite alterar manualmente estados de reserva ou venda nem veículos com venda concluída. Administradores também podem excluir veículos sem registros de venda; veículos com histórico são preservados. O sistema ainda não possui cadastro ou cancelamento de reservas, portanto o estado `reservado` permanece bloqueado para alteração manual até que exista um processo próprio.
 
 **Documentos-base do projeto:**
 
@@ -80,7 +80,7 @@ Administradores podem alterar entre `disponivel` e `em_manutencao` pela listagem
 
 | ✅ Dentro do escopo | 🚫 Fora do escopo |
 |---|---|
-| **Estoque:** cadastro, edição, consulta e status de veículos, com validações e alerta visual de estoque mínimo | **Integração com DETRAN/SENATRAN:** chassi e RENAVAM são apenas simulados |
+| **Estoque:** cadastro, edição, consulta, exclusão e alteração de status de veículos, com validações | **Alertas de quantidade mínima:** fora do escopo atual |
 | **Vendas:** registro (veículo + cliente + vendedor), baixa automática de estoque, comissão e desconto especial (≥ 10%) com aprovação do Administrador | **Nota fiscal eletrônica:** nenhuma integração com Receita Federal ou SEFAZ |
 | **Clientes:** CRUD com validação e agendamento/cancelamento de test drive | **Hospedagem paga e domínio próprio:** roda em `localhost` ou em nuvem gratuita, só para demonstração |
 | **Usuários:** login, perfis Administrador/Vendedor, inativação de contas e log de auditoria | **Aplicativo mobile nativo:** só interface web responsiva |
@@ -96,12 +96,11 @@ Escala do BRD: **1 Obrigatório** (sem ele o projeto não existe) · **2 Desejá
 | Módulo | 1 · Obrigatório | 2 · Desejável | 3 · Opcional | 4 · Não terá |
 |---|---|---|---|---|
 | **Vendas** (7) | VEN-01, 02, 03, 06 | VEN-04, 05, 07 | — | — |
-| **Estoque** (7) | EST-01, 02, 03 | EST-04, 06 | EST-05 e EST-07 | — |
+| **Estoque** (5) | EST-01, 02, 03 | EST-04, 06 | — | — |
 | **Clientes** (11) | CLI-01, 02, 03, 05, 06, 11 | CLI-04, 07, 10 | CLI-08, 09 | — |
 | **Relatórios** (8) | REL-01, 02, 03 | REL-04, 05 | REL-06 | REL-07, 08 |
 | **Usuários** (16) | USU-01, 02, 03, 04, 08, 09, 10, 11, 14, 15, 16 | USU-06, 07, 12, 13 | USU-05 | — |
 
-> - **RF-EST-05 e RF-EST-07 descrevem o mesmo alerta de estoque mínimo** — tratar como um requisito só.
 > - A maior parte dos RF-USU-01 a 14 descreve, pela ótica do perfil, funções que já pertencem a outros módulos (registrar venda, cadastrar cliente ou veículo, aprovar desconto). Eles viram a [matriz de permissões](#-permissões-por-perfil), aplicada por *guards*.
 
 ---
@@ -129,7 +128,7 @@ Janelas de entrega do Cronograma (09/09 a 09/12):
 | 09/09 – 27/09 | Requisitos e arquitetura | Requisitos e casos de uso, DER, diagrama de classes, repositório com projeto NestJS, projeto Vue responsivo |
 | 28/09 – 12/10 | **Fatia 1** — Usuários | Login com senha em hash, perfis e permissões, tabela e rotina de log de auditoria, telas de login/logout e navegação protegida, gestão e inativação de usuários, consulta ao log |
 | 13/10 – 24/10 | **Fatia 2** — Clientes | CRUD e validações, inativação lógica, agendamento/cancelamento de test drive, telas |
-| 25/10 – 05/11 | **Fatia 3** — Estoque | CRUD de veículos, controle de status, filtros e validações (placa, chassi, RENAVAM), listagem com alerta de estoque mínimo |
+| 25/10 – 05/11 | **Fatia 3** — Estoque | CRUD de veículos, controle de status, filtros e validações (placa, chassi, RENAVAM) |
 | 06/11 – 20/11 | **Fatias 4 e 5** — Vendas | Registro de venda, baixa automática, comissão, fluxo de desconto especial, formulários e interfaces |
 | 21/11 – 30/11 | **Fatia 6** — Relatórios | Faturamento, posição do estoque, desempenho por vendedor, exportação PDF/CSV, tela com filtros |
 | 01/12 – 09/12 | Testes e documentação | Usabilidade, desempenho, responsividade, publicação em nuvem gratuita, relatório técnico, roteiro da demonstração |
@@ -149,14 +148,14 @@ A ordem abaixo segue as janelas do Cronograma, e cada fatia tem um responsável 
 |---|---|---|---|---|---|
 | 1 | Usuários, autenticação e auditoria | 28/09 – 12/10 | Login com hash, 2 perfis com *guards*, cadastro e bloqueio de funcionários, log de auditoria gravado por interceptor e tela de consulta ao log | RF-USU-09, 15, 16 · RNF004, 005, 006, 007 | Paulo Guilherme |
 | 2 | Clientes | 13/10 – 24/10 | CRUD com validação, inativação lógica, acesso restrito aos dados; test drive *(cortável)* | RF-CLI-01 a 06, 11 · RF-CLI-08/09 e RF-USU-05 *(test drive)* | Nicole Gabriel |
-| 3 | Estoque | 25/10 – 05/11 | Cadastro, consulta e edição, status (Disponível/Reservado/Vendido/Em Manutenção), validação de placa/chassi/RENAVAM, filtros, histórico de entradas e saídas, alerta de estoque mínimo *(cortável)* | RF-EST-01 a 07 · RF-USU-11 | Maycon Douglas |
+| 3 | Estoque | 25/10 – 05/11 | Cadastro, consulta, edição e exclusão protegida por histórico, status (Disponível/Reservado/Vendido/Em Manutenção), validação de placa/chassi/RENAVAM e filtros | RF-EST-01 a 07 · RF-USU-11 | Maycon Douglas |
 | 4 | Vendas — núcleo | 06/11 – 20/11 | Registrar venda (veículo + cliente + vendedor), pagamento, baixa automática de estoque **na mesma transação**, comissão, histórico de vendas | RF-VEN-01 a 04, 06 | Ingridy Luzia |
 | 5 | Vendas — desconto especial e cancelamento | 06/11 – 20/11 | Solicitação de desconto ≥ 10%, aprovação/reprovação pelo Administrador, cancelamento de venda com justificativa no log | RF-VEN-05, 07 · RF-USU-06, 12 | Ingridy Luzia · Paulo Guilherme |
 | 6 | Relatórios consolidados | 21/11 – 30/11 | Faturamento, posição de estoque, desempenho por vendedor (join de +1 tabela), consolidado do Administrador, relatório e comissões do próprio vendedor, exportação PDF/CSV *(cortável)* | RF-REL-01 a 05 · RF-USU-03, 07, 10 | José Henrique |
 
 - **Depois de Vendas:** RF-CLI-07 (histórico de compras) e RF-CLI-10 (pós-venda e garantia) dependem das vendas registradas.
 - **Fatia 6:** resolve, sozinha, a exigência de "consulta/relatório que agregue dados de mais de uma tabela" das duas disciplinas. Vale ir escrevendo as consultas sobre os dados de exemplo antes da janela de 21/11.
-- **Ordem de corte se o prazo apertar** (nunca os de prioridade 1), sugestão: RF-REL-06 (dashboard gráfico, fora do Cronograma) → test drive (RF-CLI-08/09, RF-USU-05) → alerta de estoque mínimo (RF-EST-05/07) → exportação PDF/CSV (RF-REL-04).
+- **Ordem de corte se o prazo apertar** (nunca os de prioridade 1), sugestão: RF-REL-06 (dashboard gráfico, fora do Cronograma) → test drive (RF-CLI-08/09, RF-USU-05) → exportação PDF/CSV (RF-REL-04).
 
 ---
 

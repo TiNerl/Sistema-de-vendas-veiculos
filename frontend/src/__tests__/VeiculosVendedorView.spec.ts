@@ -3,38 +3,39 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import VeiculosVendedorView from '@/views/VeiculosVendedorView.vue'
 import {
-  atualizarMinimoEstoque,
   atualizarStatusVeiculo,
+  excluirVeiculo,
   listarVeiculos,
-  obterResumoEstoque,
 } from '@/services/veiculos.service'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
+import type { Veiculo } from '@/types/veiculo'
 
 vi.mock('@/services/veiculos.service', () => ({
-  atualizarMinimoEstoque: vi.fn(),
   atualizarStatusVeiculo: vi.fn(),
+  excluirVeiculo: vi.fn(),
   listarVeiculos: vi.fn(),
-  obterResumoEstoque: vi.fn(),
 }))
 
-const veiculosDeTeste = [
-  {
-    id_veiculo: 1,
-    marca: 'Toyota',
-    modelo: 'Corolla',
-    versao: 'XEi',
-    ano: 2024,
-    cor: 'Prata',
-    quilometragem: 12000,
-    combustivel: 'flex',
-    cambio: 'automatico',
-    placa: 'ABC1D23',
-    chassi: '12345678901234567',
-    renavam: '12345678901',
-    preco: '145000.00',
-    status: 'disponivel' as const,
-  },
+const veiculoToyota: Veiculo = {
+  id_veiculo: 1,
+  marca: 'Toyota',
+  modelo: 'Corolla',
+  versao: 'XEi',
+  ano: 2024,
+  cor: 'Prata',
+  quilometragem: 12000,
+  combustivel: 'flex',
+  cambio: 'automatico',
+  placa: 'ABC1D23',
+  chassi: '12345678901234567',
+  renavam: '12345678901',
+  preco: '145000.00',
+  status: 'disponivel',
+}
+
+const veiculosDeTeste: Veiculo[] = [
+  veiculoToyota,
   {
     id_veiculo: 2,
     marca: 'Honda',
@@ -99,8 +100,7 @@ describe('VeiculosVendedorView', () => {
     })
     vi.mocked(listarVeiculos).mockReset()
     vi.mocked(atualizarStatusVeiculo).mockReset()
-    vi.mocked(atualizarMinimoEstoque).mockReset()
-    vi.mocked(obterResumoEstoque).mockReset()
+    vi.mocked(excluirVeiculo).mockReset()
   })
 
   function montarView() {
@@ -193,16 +193,11 @@ describe('VeiculosVendedorView', () => {
     vi.mocked(listarVeiculos)
       .mockResolvedValueOnce(veiculosDeTeste)
       .mockResolvedValueOnce([
-        { ...veiculosDeTeste[0], status: 'em_manutencao' },
+        { ...veiculoToyota, status: 'em_manutencao' },
         ...veiculosDeTeste.slice(1),
       ])
-    vi.mocked(obterResumoEstoque).mockResolvedValue({
-      quantidadeDisponivel: 1,
-      quantidadeMinima: 10,
-      abaixoDoMinimo: true,
-    })
     vi.mocked(atualizarStatusVeiculo).mockResolvedValue({
-      ...veiculosDeTeste[0],
+      ...veiculoToyota,
       status: 'em_manutencao',
     })
 
@@ -221,7 +216,7 @@ describe('VeiculosVendedorView', () => {
     await flushPromises()
 
     expect(atualizarStatusVeiculo).toHaveBeenCalledWith(1, 'em_manutencao')
-    expect(wrapper.findAll('tbody tr')[0].text()).toContain('Em manutenção')
+    expect(wrapper.get('tbody tr').text()).toContain('Em manutenção')
     expect(wrapper.text()).toContain('Status do veículo Toyota Corolla atualizado')
     expect(listarVeiculos).toHaveBeenLastCalledWith({})
   })
@@ -234,35 +229,29 @@ describe('VeiculosVendedorView', () => {
     await flushPromises()
 
     expect(wrapper.text()).not.toContain('Alterar status')
-    expect(wrapper.text()).not.toContain('Quantidade mínima')
-    expect(obterResumoEstoque).not.toHaveBeenCalled()
+    expect(wrapper.find('.vehicle-delete-button').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('estoque mínimo')
   })
 
-  it('permite ao administrador configurar e ver o alerta do mínimo de estoque', async () => {
+  it('permite que o administrador exclua um veículo e atualiza a listagem', async () => {
     useAuthStore().usuario = { id: 1, cpf: '12345678901', perfil: 'admin' }
     vi.mocked(listarVeiculos).mockResolvedValue(veiculosDeTeste)
-    vi.mocked(obterResumoEstoque).mockResolvedValue({
-      quantidadeDisponivel: 7,
-      quantidadeMinima: 10,
-      abaixoDoMinimo: true,
-    })
-    vi.mocked(atualizarMinimoEstoque).mockResolvedValue({
-      quantidadeDisponivel: 7,
-      quantidadeMinima: 5,
-      abaixoDoMinimo: false,
-    })
+    vi.mocked(excluirVeiculo).mockResolvedValue(undefined)
 
     const wrapper = montarView()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Estoque baixo!')
-    expect(wrapper.text()).toContain('apenas 7 veículos disponíveis')
-    await wrapper.get('#minimo-estoque').setValue('5')
-    await wrapper.get('.minimum-form').trigger('submit.prevent')
+    await wrapper.get('.vehicle-delete-button').trigger('click')
+    expect(wrapper.get('[role="dialog"]').text()).toContain('Excluir veículo')
+    await wrapper.get('[role="dialog"] .secondary-button').trigger('click')
+    expect(excluirVeiculo).not.toHaveBeenCalled()
+
+    await wrapper.get('.vehicle-delete-button').trigger('click')
+    await wrapper.get('[role="dialog"] .button--danger').trigger('click')
     await flushPromises()
 
-    expect(atualizarMinimoEstoque).toHaveBeenCalledWith(5)
-    expect(wrapper.text()).toContain('Estoque dentro do mínimo configurado.')
-    expect(wrapper.text()).toContain('Quantidade mínima de estoque atualizada.')
+    expect(excluirVeiculo).toHaveBeenCalledWith(1)
+    expect(wrapper.findAll('tbody tr')).toHaveLength(3)
+    expect(wrapper.text()).toContain('Veículo Toyota Corolla excluído com sucesso.')
   })
 })

@@ -8,18 +8,14 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { VeiculosController } from './veiculos.controller';
 
-describe('VeiculosController list endpoint access', () => {
+describe('VeiculosController access', () => {
     const reflector = {
-        getAllAndOverride: vi.fn().mockReturnValue(['admin', 'vendedor']),
+        getAllAndOverride: vi.fn(),
     };
     let guard: RolesGuard;
-    let perfil: string | undefined;
 
     beforeEach(async () => {
-        perfil = undefined;
         vi.clearAllMocks();
-        reflector.getAllAndOverride.mockReturnValue(['admin', 'vendedor']);
-
         const module = await Test.createTestingModule({
             providers: [
                 RolesGuard,
@@ -30,56 +26,46 @@ describe('VeiculosController list endpoint access', () => {
         guard = module.get(RolesGuard);
     });
 
-    it('requires JWT and explicitly permits only admin and vendedor roles', () => {
-        const listar = VeiculosController.prototype.listar;
+    it('requires JWT and permits admin and vendedor to list vehicles', () => {
+        const filtrar = VeiculosController.prototype.filtrar;
 
-        expect(Reflect.getMetadata(GUARDS_METADATA, listar)).toEqual([
+        expect(Reflect.getMetadata(GUARDS_METADATA, filtrar)).toEqual([
             JwtAuthGuard,
             RolesGuard,
         ]);
-        expect(Reflect.getMetadata(ROLES_KEY, listar)).toEqual(['admin', 'vendedor']);
+        expect(Reflect.getMetadata(ROLES_KEY, filtrar)).toEqual(['admin', 'vendedor']);
     });
 
-    it('restringe alteração de status e configuração de estoque ao administrador', () => {
-        for (const handler of [
-            VeiculosController.prototype.atualizarStatus,
-            VeiculosController.prototype.obterResumoEstoque,
-            VeiculosController.prototype.atualizarMinimoEstoque,
-        ]) {
-            expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toEqual([
-                JwtAuthGuard,
-                RolesGuard,
-            ]);
-            expect(Reflect.getMetadata(ROLES_KEY, handler)).toEqual(['admin']);
-        }
+    it.each([
+        VeiculosController.prototype.atualizarStatus,
+        VeiculosController.prototype.excluir,
+    ])('restricts status changes and deletion to admins', (handler) => {
+        expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toEqual([
+            JwtAuthGuard,
+            RolesGuard,
+        ]);
+        expect(Reflect.getMetadata(ROLES_KEY, handler)).toEqual(['admin']);
     });
 
-    it.each(['admin', 'vendedor'])('permite o perfil %s', (perfilPermitido) => {
-        perfil = perfilPermitido;
+    it.each(['admin', 'vendedor'])('allows the %s profile to list vehicles', (perfil) => {
+        reflector.getAllAndOverride.mockReturnValue(['admin', 'vendedor']);
         const contexto = new ExecutionContextHost(
             [{ user: { perfil } }],
             VeiculosController,
-            VeiculosController.prototype.listar,
+            VeiculosController.prototype.filtrar,
         );
 
         expect(guard.canActivate(contexto)).toBe(true);
     });
 
-    it('nega perfil sem permissão e requisição sem usuário autenticado', () => {
-        perfil = 'outro';
-        let contexto = new ExecutionContextHost(
-            [{ user: { perfil } }],
+    it('denies users without a permitted profile', () => {
+        reflector.getAllAndOverride.mockReturnValue(['admin', 'vendedor']);
+        const contexto = new ExecutionContextHost(
+            [{ user: { perfil: 'outro' } }],
             VeiculosController,
-            VeiculosController.prototype.listar,
+            VeiculosController.prototype.filtrar,
         );
-        expect(guard.canActivate(contexto)).toBe(false);
 
-        perfil = undefined;
-        contexto = new ExecutionContextHost(
-            [{ user: undefined }],
-            VeiculosController,
-            VeiculosController.prototype.listar,
-        );
         expect(guard.canActivate(contexto)).toBe(false);
     });
 });

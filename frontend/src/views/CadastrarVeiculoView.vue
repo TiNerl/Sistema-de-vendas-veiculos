@@ -151,7 +151,7 @@ function validar(): boolean {
   const placa = formulario.placa.replace(/[^A-Z0-9]/gi, '').toUpperCase()
   const chassi = formulario.chassi.trim().toUpperCase()
   const renavam = formulario.renavam.replace(/\D/g, '')
-  const preco = Number(formulario.preco.toString().replace('.', '').replace(',', '.'))
+  const preco = Number(formulario.preco)
   const quilometragem = Number(formulario.quilometragem)
   const ano = Number(formulario.ano)
 
@@ -208,13 +208,7 @@ function dadosNormalizados() {
     placa: formulario.placa.replace(/[-\s]/g, '').toUpperCase(),
     chassi: formulario.chassi.trim().toUpperCase(),
     renavam: formulario.renavam.replace(/\D/g, ''),
-    preco: Number(
-      formulario.preco
-        .toString()
-        .replace(/[^\d,.-]/g, '')
-        .replace('.', '')
-        .replace(',', '.'),
-    ),
+    preco: Number(formulario.preco),
   }
 }
 
