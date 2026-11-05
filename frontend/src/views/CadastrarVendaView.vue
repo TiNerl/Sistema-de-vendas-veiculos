@@ -86,7 +86,10 @@ async function registrarVenda() {
       percentual_desconto: Number(percentualDesconto.value),
     })
 
-    sucesso.value = `Venda #${venda.id_venda} registrada com sucesso. Valor final: ${moeda(venda.valor_final)}.`
+    sucesso.value =
+      venda.status === 'pendente'
+        ? `Solicitação de desconto da venda #${venda.id_venda} enviada para aprovação.`
+        : `Venda #${venda.id_venda} registrada com sucesso. Valor final: ${moeda(venda.valor_final)}.`
     idCliente.value = ''
     idVeiculo.value = ''
     formaPagamento.value = 'a_vista'

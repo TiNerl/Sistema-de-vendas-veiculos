@@ -24,7 +24,7 @@ export interface VendaRegistrada {
   forma_pagamento: FormaPagamento | null
   percentual_comissao: string | number | null
   valor_comissao: string | number | null
-  status: 'pendente' | 'concluida'
+  status: 'pendente' | 'concluida' | 'cancelada'
   data_venda: string
   cliente?: { id_cliente: number; nome: string; cpf?: string }
   veiculo?: { id_veiculo: number; marca: string; modelo: string; versao: string; placa: string }
@@ -40,5 +40,15 @@ export async function listarVendas(filtros?: FiltrosVenda): Promise<VendaRegistr
   const resposta = await api.get<VendaRegistrada[]>('/vendas', {
     params: filtros,
   })
+  return resposta.data
+}
+
+export async function aprovarVenda(id: number): Promise<VendaRegistrada> {
+  const resposta = await api.patch<VendaRegistrada>(`/vendas/${id}/aprovar`)
+  return resposta.data
+}
+
+export async function rejeitarVenda(id: number): Promise<VendaRegistrada> {
+  const resposta = await api.patch<VendaRegistrada>(`/vendas/${id}/rejeitar`)
   return resposta.data
 }

@@ -16,8 +16,6 @@ const clientes = ref<Cliente[]>([])
 const carregando = ref(false)
 const erro = ref('')
 const erroClientes = ref('')
-const vendaParaCancelar = ref<VendaRegistrada | null>(null)
-const justificativaCancelamento = ref('')
 
 function clienteIdDaRota(valor: unknown): string {
   const id = typeof valor === 'string' ? Number(valor) : Number.NaN
@@ -65,14 +63,14 @@ function formatarPercentual(valor: number | string | null): string {
   return `${numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
 }
 
-function abrirCancelamento(venda: VendaRegistrada) {
-  vendaParaCancelar.value = venda
-  justificativaCancelamento.value = ''
+function formatarComissao(valor: number | string | null): string {
+  return valor === null ? 'Não informado' : moeda(valor)
 }
 
-function fecharCancelamento() {
-  vendaParaCancelar.value = null
-  justificativaCancelamento.value = ''
+function rotuloStatus(status: VendaRegistrada['status']): string {
+  if (status === 'concluida') return 'Concluída'
+  if (status === 'cancelada') return 'Cancelada'
+  return 'Pendente'
 }
 
 function mensagemErro(error: unknown): string {
@@ -219,7 +217,6 @@ watch(
               <th>Forma de pagamento</th>
               <th>Valor Final</th>
               <th>Status</th>
-              <th v-if="eAdmin">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -237,25 +234,13 @@ watch(
               <td>{{ moeda(venda.valor_veiculo) }}</td>
               <td>{{ moeda(venda.valor_desconto ?? 0) }}</td>
               <td>{{ formatarPercentual(venda.percentual_comissao) }}</td>
-              <td>{{ moeda(venda.valor_comissao ?? undefined) }}</td>
+              <td>{{ formatarComissao(venda.valor_comissao) }}</td>
               <td>{{ formatarPagamento(venda.forma_pagamento) }}</td>
               <td><strong>{{ moeda(venda.valor_final) }}</strong></td>
               <td>
-                <span :class="['badge', venda.status === 'concluida' ? 'badge--success' : 'badge--warning']">
-                  {{ venda.status }}
+                <span :class="['badge', `badge--${venda.status}`]">
+                  {{ rotuloStatus(venda.status) }}
                 </span>
-              </td>
-              <td v-if="eAdmin">
-                <button
-                  v-if="venda.status === 'concluida'"
-                  class="table-action"
-                  type="button"
-                  :aria-label="`Cancelar venda ${venda.id_venda}`"
-                  @click="abrirCancelamento(venda)"
-                >
-                  Cancelar venda
-                </button>
-                <span v-else>—</span>
               </td>
             </tr>
           </tbody>
@@ -263,54 +248,6 @@ watch(
       </div>
     </div>
 
-    <div
-      v-if="vendaParaCancelar"
-      class="modal-backdrop"
-      @click.self="fecharCancelamento"
-      @keydown.esc="fecharCancelamento"
-    >
-      <section
-        class="confirm-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cancelar-venda-titulo"
-        aria-describedby="cancelar-venda-descricao"
-      >
-        <h2 id="cancelar-venda-titulo">Confirmar cancelamento da venda</h2>
-        <p id="cancelar-venda-descricao" class="confirm-copy">
-          Venda #{{ vendaParaCancelar.id_venda }} — {{ vendaParaCancelar.cliente?.nome ?? 'Cliente não informado' }},
-          valor {{ moeda(vendaParaCancelar.valor_final) }}.
-        </p>
-        <div class="field">
-          <label for="justificativa-cancelamento">Justificativa do cancelamento</label>
-          <textarea
-            id="justificativa-cancelamento"
-            v-model="justificativaCancelamento"
-            rows="4"
-            required
-            maxlength="1000"
-            placeholder="Informe o motivo do cancelamento"
-          ></textarea>
-        </div>
-        <p class="alert alert--info" role="status">
-          A API ainda não disponibiliza o cancelamento de vendas. A justificativa não será enviada
-          nem salva.
-        </p>
-        <div class="dialog-actions">
-          <button class="button button--secondary" type="button" @click="fecharCancelamento">
-            Voltar
-          </button>
-          <button
-            class="button button--danger"
-            type="button"
-            disabled
-            :title="justificativaCancelamento.trim() ? 'Aguardando suporte da API' : 'Informe uma justificativa obrigatória'"
-          >
-            Confirmar cancelamento
-          </button>
-        </div>
-      </section>
-    </div>
   </section>
 </template>
 
@@ -356,22 +293,13 @@ watch(
   background-color: #fef3c7;
   color: #92400e;
 }
-
-.field textarea {
-  width: 100%;
-  min-height: 100px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  color: var(--color-text);
-  background: var(--color-white);
-  font: inherit;
-  resize: vertical;
+.badge--pendente {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+.badge--cancelada {
+  background-color: #eef1f5;
+  color: #78879b;
 }
 
-.field textarea:focus {
-  border-color: var(--color-gold);
-  box-shadow: 0 0 0 3px rgb(210 161 58 / 17%);
-  outline: none;
-}
 </style>
