@@ -89,7 +89,7 @@ async function sair() {
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 3v18m6-14H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H6" />
               </svg>
-              <span>Solicitações de desconto</span>
+              <span>Aprovação de descontos</span>
             </RouterLink>
           </div>
 

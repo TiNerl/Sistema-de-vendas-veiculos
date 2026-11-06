@@ -35,7 +35,7 @@ const itensNavegacao = [
     icon: 'M4 19V5m0 14h16M8 15v-4m4 4V7m4 8v-6',
   },
   {
-    label: 'Solicitações de desconto',
+    label: 'Minhas solicitações',
     to: '/vendedor/descontos',
     icon: 'M12 3v18m6-14H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H6',
   },

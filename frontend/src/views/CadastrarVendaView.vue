@@ -64,6 +64,8 @@ async function carregarDados() {
 }
 
 async function registrarVenda() {
+  if (salvando.value) return
+
   erro.value = ''
   sucesso.value = ''
 
@@ -72,7 +74,11 @@ async function registrarVenda() {
     return
   }
 
-  if (percentualDesconto.value < 0 || percentualDesconto.value > 100) {
+  if (
+    !Number.isFinite(percentualDesconto.value) ||
+    percentualDesconto.value < 0 ||
+    percentualDesconto.value > 100
+  ) {
     erro.value = 'O desconto deve estar entre 0% e 100%.'
     return
   }

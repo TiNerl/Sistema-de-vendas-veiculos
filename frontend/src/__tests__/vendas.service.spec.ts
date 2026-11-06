@@ -17,7 +17,7 @@ describe('vendas.service', () => {
     vi.mocked(api.post).mockResolvedValue({ data: { id_venda: 41, status: 'pendente' } })
   })
 
-  it('creates a discount request through the existing sales endpoint', async () => {
+  it('registers a sale through the existing sales endpoint', async () => {
     const request = {
       id_cliente: 7,
       id_veiculo: 3,

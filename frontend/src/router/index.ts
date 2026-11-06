@@ -123,7 +123,7 @@ const router = createRouter({
           meta: {
             requerAutenticacao: true,
             apenasAdministrador: true,
-            titulo: 'Solicitações de desconto',
+            titulo: 'Aprovação de descontos',
           },
         },
       ],
@@ -179,7 +179,7 @@ const router = createRouter({
           path: 'descontos',
           name: 'vendedor-solicitacoes-desconto',
           component: SolicitacoesDescontoView,
-          meta: { titulo: 'Solicitações de desconto' },
+          meta: { titulo: 'Minhas solicitações' },
         },
         {
           path: 'test-drives',

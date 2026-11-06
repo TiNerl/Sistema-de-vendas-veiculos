@@ -78,30 +78,76 @@ describe('CadastrarVendaView', () => {
     })
   })
 
-  it('allows a 10% sale because the API completes rather than submits it for approval', async () => {
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: [{ path: '/vendedor/vendas', component: CadastrarVendaView }],
-    })
-    await router.push('/vendedor/vendas')
+  it.each([
+    {
+      percentual: 0,
+      status: 'concluida' as const,
+      mensagem: 'Venda #41 registrada com sucesso.',
+      tipoSucesso: 'registrada',
+    },
+    {
+      percentual: 5,
+      status: 'concluida' as const,
+      mensagem: 'Venda #41 registrada com sucesso.',
+      tipoSucesso: 'registrada',
+    },
+    {
+      percentual: 10,
+      status: 'concluida' as const,
+      mensagem: 'Venda #41 registrada com sucesso.',
+      tipoSucesso: 'registrada',
+    },
+    {
+      percentual: 15,
+      status: 'pendente' as const,
+      mensagem: 'Solicitação de desconto da venda #41 enviada para aprovação.',
+      tipoSucesso: 'enviada para aprovação',
+    },
+  ])(
+    'registra a venda com desconto de $percentual% e respeita o status retornado pela API',
+    async ({ percentual, status, mensagem, tipoSucesso }) => {
+      vi.mocked(cadastrarVenda).mockResolvedValue({
+        id_venda: 41,
+        valor_veiculo: '100000.00',
+        percentual_desconto: String(percentual),
+        valor_desconto: String(percentual * 1000),
+        valor_final: String(100000 - percentual * 1000),
+        forma_pagamento: 'a_vista',
+        percentual_comissao: '3.00',
+        valor_comissao: '2700.00',
+        status,
+        data_venda: '2026-11-04T12:00:00.000Z',
+      })
 
-    const wrapper = mount(CadastrarVendaView, {
-      global: { plugins: [pinia, router] },
-    })
-    await flushPromises()
+      const router = createRouter({
+        history: createMemoryHistory(),
+        routes: [
+          { path: '/vendedor/vendas', component: CadastrarVendaView },
+          { path: '/vendedor', component: { template: '<div />' } },
+        ],
+      })
+      await router.push('/vendedor/vendas')
 
-    await wrapper.get('#cliente-venda').setValue('7')
-    await wrapper.get('#veiculo-venda').setValue('3')
-    await wrapper.get('#desconto-venda').setValue('10')
-    await wrapper.get('form').trigger('submit')
-    await flushPromises()
+      const wrapper = mount(CadastrarVendaView, {
+        global: { plugins: [pinia, router] },
+      })
+      await flushPromises()
 
-    expect(cadastrarVenda).toHaveBeenCalledWith({
-      id_cliente: 7,
-      id_veiculo: 3,
-      forma_pagamento: 'a_vista',
-      percentual_desconto: 10,
-    })
-    expect(wrapper.text()).toContain('Venda #41 registrada com sucesso.')
-  })
+      await wrapper.get('#cliente-venda').setValue('7')
+      await wrapper.get('#veiculo-venda').setValue('3')
+      await wrapper.get('#desconto-venda').setValue(String(percentual))
+      await wrapper.get('form').trigger('submit')
+      await flushPromises()
+
+      expect(cadastrarVenda).toHaveBeenCalledOnce()
+      expect(cadastrarVenda).toHaveBeenCalledWith({
+        id_cliente: 7,
+        id_veiculo: 3,
+        forma_pagamento: 'a_vista',
+        percentual_desconto: percentual,
+      })
+      expect(wrapper.text()).toContain(mensagem)
+      expect(wrapper.text()).toContain(tipoSucesso)
+    },
+  )
 })
