@@ -11,17 +11,22 @@ import {
     Min,
 } from 'class-validator';
 
+const ANO_ATUAL = new Date().getFullYear();
+
 export class CriarVeiculoDto {
+    @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
     @IsString()
     @IsNotEmpty()
     @MaxLength(100)
     marca: string;
 
+    @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
     @IsString()
     @IsNotEmpty()
     @MaxLength(100)
     modelo: string;
 
+    @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
     @IsString()
     @IsNotEmpty()
     @MaxLength(100)
@@ -29,9 +34,10 @@ export class CriarVeiculoDto {
 
     @IsInt()
     @Min(1886)
-    @Max(2100)
+    @Max(ANO_ATUAL)
     ano: number;
 
+    @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
     @IsString()
     @IsNotEmpty()
     @MaxLength(50)
@@ -54,7 +60,7 @@ export class CriarVeiculoDto {
         typeof value === 'string' ? value.replace(/-/g, '').trim().toUpperCase() : value,
     )
     @IsString()
-    @Matches(/^[A-Z]{3}\d[A-Z0-9]\d{2}$/)
+    @Matches(/^(?:[A-Z]{3}\d{4}|[A-Z]{3}\d[A-Z0-9]\d{2})$/)
     placa: string;
 
     @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))

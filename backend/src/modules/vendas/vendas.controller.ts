@@ -33,7 +33,8 @@ export class VendasController {
     @Get(':id')
     buscarPorId(@Param('id', ParseIntPipe) id: number) {
         return this.vendasService.buscarPorId(id);
-      
+    }
+
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
     @Patch(':id/aprovar')

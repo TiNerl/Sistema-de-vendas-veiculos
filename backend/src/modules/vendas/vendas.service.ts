@@ -156,7 +156,8 @@ export class VendasService {
         }
 
         return venda;
-      
+    }
+
     async aprovar(id: number) {
         return this.dataSource.transaction(async (manager) => {
             const venda = await manager.findOne(Venda, {
