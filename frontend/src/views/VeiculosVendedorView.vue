@@ -4,7 +4,6 @@ import { isAxiosError } from 'axios'
 import { useRoute } from 'vue-router'
 import {
   atualizarStatusVeiculo,
-  excluirVeiculo,
   listarVeiculos,
   type FiltrosVeiculos,
 } from '@/services/veiculos.service'
@@ -64,14 +63,10 @@ const rotaLista = computed(() =>
 const mensagemValidacao = ref('')
 const ultimaConsulta = ref(0)
 const veiculoSelecionado = ref<Veiculo | null>(null)
-const veiculoParaExcluir = ref<Veiculo | null>(null)
 const statusSelecionado = ref<StatusVeiculo>('em_manutencao')
 const erroStatus = ref('')
-const erroExclusao = ref('')
 const salvandoStatus = ref(false)
 const mensagemStatus = ref('')
-const mensagemExclusao = ref('')
-const excluindo = ref(false)
 
 function parseNumeroOpcional(valor: string | number): number {
   const texto = String(valor).trim()
@@ -234,38 +229,6 @@ async function confirmarAlteracaoStatus() {
   }
 }
 
-function abrirConfirmacaoExclusao(veiculo: Veiculo) {
-  veiculoParaExcluir.value = veiculo
-  erroExclusao.value = ''
-  mensagemExclusao.value = ''
-}
-
-function cancelarExclusao() {
-  veiculoParaExcluir.value = null
-  erroExclusao.value = ''
-}
-
-async function confirmarExclusao() {
-  const veiculo = veiculoParaExcluir.value
-  if (!veiculo?.id_veiculo) return
-
-  excluindo.value = true
-  erroExclusao.value = ''
-
-  try {
-    await excluirVeiculo(veiculo.id_veiculo)
-    veiculos.value = veiculos.value.filter(
-      (item) => item.id_veiculo !== veiculo.id_veiculo,
-    )
-    mensagemExclusao.value = `Veículo ${veiculo.marca} ${veiculo.modelo} excluído com sucesso.`
-    veiculoParaExcluir.value = null
-  } catch (error) {
-    erroExclusao.value = mensagemErro(error, 'Não foi possível excluir o veículo.')
-  } finally {
-    excluindo.value = false
-  }
-}
-
 function precoLegivel(preco: Veiculo['preco']): string {
   const valor = Number(preco)
   return Number.isFinite(valor)
@@ -306,10 +269,6 @@ onMounted(() => {
 
     <div v-if="mensagemStatus" class="alert alert--success notice" role="status">
       {{ mensagemStatus }}
-    </div>
-
-    <div v-if="mensagemExclusao" class="alert alert--success notice" role="status">
-      {{ mensagemExclusao }}
     </div>
 
     <section class="card filter-card" aria-label="Filtros de veículos">
@@ -436,14 +395,6 @@ onMounted(() => {
                 >
                   Alterar status
                 </button>
-                <button
-                  v-if="ehAdministrador"
-                  class="button button--danger vehicle-delete-button"
-                  type="button"
-                  @click="abrirConfirmacaoExclusao(veiculo)"
-                >
-                  Excluir
-                </button>
               </td>
             </tr>
           </tbody>
@@ -503,40 +454,6 @@ onMounted(() => {
       </section>
     </div>
 
-    <div v-if="veiculoParaExcluir" class="dialog-backdrop">
-      <section
-        class="status-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirmacao-exclusao-titulo"
-      >
-        <span class="eyebrow">CONFIRMAÇÃO DE EXCLUSÃO</span>
-        <h2 id="confirmacao-exclusao-titulo">Excluir veículo</h2>
-        <p>
-          Confirma a exclusão de {{ veiculoParaExcluir.marca }}
-          {{ veiculoParaExcluir.modelo }} ({{ veiculoParaExcluir.ano }})?
-        </p>
-        <p v-if="erroExclusao" class="status-error" role="alert">{{ erroExclusao }}</p>
-        <div class="dialog-actions">
-          <button
-            class="secondary-button"
-            type="button"
-            :disabled="excluindo"
-            @click="cancelarExclusao"
-          >
-            Cancelar
-          </button>
-          <button
-            class="button button--danger"
-            type="button"
-            :disabled="excluindo"
-            @click="confirmarExclusao"
-          >
-            {{ excluindo ? 'Excluindo...' : 'Confirmar exclusão' }}
-          </button>
-        </div>
-      </section>
-    </div>
   </section>
 </template>
 

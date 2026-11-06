@@ -46,7 +46,3 @@ export async function atualizarStatusVeiculo(id: number, status: StatusVeiculo):
     const resposta = await api.patch<Veiculo>(`/veiculos/${id}/status`, { status })
     return resposta.data
 }
-
-export async function excluirVeiculo(id: number): Promise<void> {
-    await api.delete(`/veiculos/${id}`)
-}

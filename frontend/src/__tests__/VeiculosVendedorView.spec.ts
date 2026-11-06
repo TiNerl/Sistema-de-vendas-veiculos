@@ -4,7 +4,6 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import VeiculosVendedorView from '@/views/VeiculosVendedorView.vue'
 import {
   atualizarStatusVeiculo,
-  excluirVeiculo,
   listarVeiculos,
 } from '@/services/veiculos.service'
 import { createPinia, setActivePinia } from 'pinia'
@@ -13,7 +12,6 @@ import type { Veiculo } from '@/types/veiculo'
 
 vi.mock('@/services/veiculos.service', () => ({
   atualizarStatusVeiculo: vi.fn(),
-  excluirVeiculo: vi.fn(),
   listarVeiculos: vi.fn(),
 }))
 
@@ -100,7 +98,6 @@ describe('VeiculosVendedorView', () => {
     })
     vi.mocked(listarVeiculos).mockReset()
     vi.mocked(atualizarStatusVeiculo).mockReset()
-    vi.mocked(excluirVeiculo).mockReset()
   })
 
   function montarView() {
@@ -218,6 +215,7 @@ describe('VeiculosVendedorView', () => {
     expect(atualizarStatusVeiculo).toHaveBeenCalledWith(1, 'em_manutencao')
     expect(wrapper.get('tbody tr').text()).toContain('Em manutenção')
     expect(wrapper.text()).toContain('Status do veículo Toyota Corolla atualizado')
+    expect(wrapper.find('.vehicle-delete-button').exists()).toBe(false)
     expect(listarVeiculos).toHaveBeenLastCalledWith({})
   })
 
@@ -233,25 +231,15 @@ describe('VeiculosVendedorView', () => {
     expect(wrapper.text()).not.toContain('estoque mínimo')
   })
 
-  it('permite que o administrador exclua um veículo e atualiza a listagem', async () => {
+  it('não oferece exclusão de veículos para o administrador', async () => {
     useAuthStore().usuario = { id: 1, cpf: '12345678901', perfil: 'admin' }
     vi.mocked(listarVeiculos).mockResolvedValue(veiculosDeTeste)
-    vi.mocked(excluirVeiculo).mockResolvedValue(undefined)
 
     const wrapper = montarView()
     await flushPromises()
 
-    await wrapper.get('.vehicle-delete-button').trigger('click')
-    expect(wrapper.get('[role="dialog"]').text()).toContain('Excluir veículo')
-    await wrapper.get('[role="dialog"] .secondary-button').trigger('click')
-    expect(excluirVeiculo).not.toHaveBeenCalled()
-
-    await wrapper.get('.vehicle-delete-button').trigger('click')
-    await wrapper.get('[role="dialog"] .button--danger').trigger('click')
-    await flushPromises()
-
-    expect(excluirVeiculo).toHaveBeenCalledWith(1)
-    expect(wrapper.findAll('tbody tr')).toHaveLength(3)
-    expect(wrapper.text()).toContain('Veículo Toyota Corolla excluído com sucesso.')
+    expect(wrapper.find('.vehicle-delete-button').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Excluir veículo')
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
   })
 })
