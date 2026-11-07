@@ -28,7 +28,7 @@ function compilarSfc(src, filename) {
 }
 
 module.exports = {
-  process(src, filename) {
+  process(src, filename, options) {
     const codigo = compilarSfc(src, filename);
     const { code, map } = transformSync(codigo, {
       filename: `${filename}.ts`,
@@ -36,9 +36,21 @@ module.exports = {
       jsc: { parser: { syntax: 'typescript' }, target: 'es2022' },
       module: { type: 'commonjs' },
     });
-    return { code, map };
+    if (!options?.instrument) return { code, map };
+
+    // Com --coverage, instrumenta o código gerado (o mapa aponta de volta ao .vue).
+    const instrumentado = require('@babel/core').transformSync(code, {
+      filename,
+      babelrc: false,
+      configFile: false,
+      inputSourceMap: JSON.parse(map),
+      sourceMaps: 'both',
+      plugins: [[require.resolve('babel-plugin-istanbul'), { cwd: options.config.rootDir, exclude: [] }]],
+    });
+    return { code: instrumentado.code, map: instrumentado.map };
   },
-  getCacheKey(src, filename) {
-    return crypto.createHash('sha1').update(`${src}\0${filename}\0sfc-v3`).digest('hex');
+  getCacheKey(src, filename, options) {
+    const extra = options?.instrument ? 'cov' : '';
+    return crypto.createHash('sha1').update(`${src}\0${filename}\0sfc-v4${extra}`).digest('hex');
   },
 };

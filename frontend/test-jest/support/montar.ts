@@ -37,8 +37,13 @@ export async function montar(componente: Component, opcoes: OpcoesMontagem) {
   }
 
   const caminhoSemQuery = opcoes.caminho.split('?')[0] ?? '/'
+  const padrao = opcoes.padrao ?? caminhoSemQuery
   const rotas: RouteRecordRaw[] = [
-    { path: opcoes.padrao ?? caminhoSemQuery, component: componente },
+    // A rota nomeada 'login' existe sempre, pois layouts navegam até ela ao sair.
+    padrao === '/'
+      ? { path: '/', name: 'login', component: componente }
+      : { path: padrao, component: componente },
+    ...(padrao === '/' ? [] : [{ path: '/', name: 'login', component: vazio }]),
     { path: '/:pathMatch(.*)*', component: vazio },
   ]
   const router = createRouter({ history: createMemoryHistory(), routes: rotas })

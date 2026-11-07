@@ -36,7 +36,9 @@ async function ir(router: Router, caminho: string) {
 }
 
 describe('guards de rota', () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
 
   it('visitante em rota protegida vai ao login preservando o destino em ?redirect', async () => {
     const { router } = await prepararNavegacao({})
