@@ -7,7 +7,8 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: 'jsdom',
-      exclude: [...configDefaults.exclude, 'e2e/**'],
+      // test-jest/** pertence à suíte Jest; cypress/** aos testes E2E do Cypress.
+      exclude: [...configDefaults.exclude, 'e2e/**', 'test-jest/**', 'cypress/**'],
       root: fileURLToPath(new URL('./', import.meta.url)),
     },
   }),
