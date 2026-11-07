@@ -1,0 +1,10 @@
+[
+  { "id_cliente": 10, "nome": "Maria da Silva", "cpf": "39053344705", "email": "maria@exemplo.com",
+    "telefone": "84999990000", "endereco": "Rua das Flores, 100", "cidade": "Currais Novos", "estado": "RN",
+    "cep": "59380000", "documento": "RG1234567", "ativo": true,
+    "data_criacao": "2026-11-01T10:00:00Z", "atualizado_em": "2026-11-01T10:00:00Z" },
+  { "id_cliente": 11, "nome": "João Pereira", "cpf": "11144477735", "email": "joao@exemplo.com",
+    "telefone": "8433330000", "endereco": "Av. Central, 50", "cidade": "Natal", "estado": "RN",
+    "cep": "59000000", "documento": "CNH998877", "ativo": true,
+    "data_criacao": "2026-11-02T10:00:00Z", "atualizado_em": "2026-11-02T10:00:00Z" }
+]

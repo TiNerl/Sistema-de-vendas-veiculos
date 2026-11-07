@@ -1,0 +1,11 @@
+[
+  { "id_veiculo": 7, "marca": "Toyota", "modelo": "Corolla", "versao": "XEi", "ano": 2024, "cor": "Prata",
+    "quilometragem": 12000, "combustivel": "flex", "cambio": "automatico", "placa": "ABC1D23",
+    "chassi": "9BWZZZ377VT004251", "renavam": "12345678901", "preco": "145000.00", "status": "disponivel" },
+  { "id_veiculo": 8, "marca": "Fiat", "modelo": "Argo", "versao": "Drive", "ano": 2022, "cor": "Branco",
+    "quilometragem": 35000, "combustivel": "flex", "cambio": "manual", "placa": "FIA2B34",
+    "chassi": "9BD358A4NYJ123456", "renavam": "98765432109", "preco": "72900.00", "status": "em_manutencao" },
+  { "id_veiculo": 9, "marca": "Volkswagen", "modelo": "Polo", "versao": "Highline", "ano": 2023, "cor": "Cinza",
+    "quilometragem": 8000, "combustivel": "flex", "cambio": "automatico", "placa": "VWP3C45",
+    "chassi": "9BWAG45U0PT000001", "renavam": "11122233344", "preco": "118500.00", "status": "vendido" }
+]
