@@ -48,7 +48,7 @@ O **código de produção não foi alterado**. As suítes de Vitest e Playwright
 
 ## 2. Resultados atuais
 
-Medição de 07/11/2026, sobre o commit `64dd43d` da `dev`, com Node.js 22.
+Resultados do Jest: medição de 07/11/2026, sobre o commit `64dd43d` da `dev`, com Node.js 22. Resultados do Cypress: execução descrita abaixo, com Node.js 24.15.0.
 
 ### 2.1 Resumo
 
@@ -56,8 +56,10 @@ Medição de 07/11/2026, sobre o commit `64dd43d` da `dev`, com Node.js 22.
 |---|---:|---:|---:|---:|---:|
 | Backend — Jest | 184 | 184 | 0 | **100%** | ≈ 3,1 s |
 | Frontend — Jest | 123 | 123 | 0 | **100%** | ≈ 3,0 s |
-| Frontend — Cypress (API simulada) | 33 | _preencher_ | _preencher_ | _preencher_ | _preencher_ |
-| Frontend — Cypress (integração real, opcional) | 3 | _preencher_ | _preencher_ | _preencher_ | _preencher_ |
+| Frontend — Cypress (API simulada) | 33 | 31 | 2 | **93,9%** | ≈ 3 min |
+| Frontend — Cypress (integração real, opcional) | 3 | 0 | 0 | — (3 pendentes) | < 1 s |
+
+Na execução do Cypress 16.2.1 com Node.js 24.15.0 e Electron 146 (headless), os dois testes reprovados foram reportados durante a captura automática de tela (`cy.screenshot()` excedeu 30 s): o encerramento de sessão em `01-login.cy.ts` e o redirecionamento de visitante em `02-controle-de-acesso.cy.ts`. Os outros 31 cenários com API simulada passaram. Os 3 cenários de integração real ficaram pendentes porque a execução não foi iniciada com `REAL_API=true`. O Cypress também avisou que o Electron está depreciado como navegador de teste.
 
 Dos testes Jest, 12 documentam defeitos conhecidos: 11 com `it.failing` e 1 de registro de comportamento (ver [seção 5](#5-defeitos-encontrados)). Eles aparecem como aprovados enquanto o defeito existir.
 
@@ -72,17 +74,19 @@ A meta mínima configurada no backend (`coverageThreshold`) é de 80% em stateme
 
 ### 2.3 Resultados do Cypress por arquivo
 
-Preencha esta tabela com a tabela final que o comando `npm run test:e2e:cypress` imprime ([passo 6](#passo-6--testes-e2e-com-cypress)).
+Resultado da execução de `npm run test:e2e:cypress`:
 
 | Spec | Casos | Aprovados | Reprovados | Observação |
 |---|---:|---:|---:|---|
-| `01-login.cy.ts` | 7 | | | |
-| `02-controle-de-acesso.cy.ts` | 8 | | | |
-| `03-estoque.cy.ts` | 7 | | | |
-| `04-cadastro-de-veiculo.cy.ts` | 4 | | | |
-| `05-clientes.cy.ts` | 4 | | | |
-| `06-responsividade.cy.ts` | 3 | | | |
-| `99-integracao-real.cy.ts` | 3 | | | Pulado sem `REAL_API=true` |
+| `01-login.cy.ts` | 7 | 6 | 1 | Falha ao capturar tela após o teste de encerramento de sessão |
+| `02-controle-de-acesso.cy.ts` | 8 | 7 | 1 | Falha ao capturar tela após o teste de redirecionamento de visitante |
+| `03-estoque.cy.ts` | 7 | 7 | 0 | |
+| `04-cadastro-de-veiculo.cy.ts` | 4 | 4 | 0 | |
+| `05-clientes.cy.ts` | 4 | 4 | 0 | |
+| `06-responsividade.cy.ts` | 3 | 3 | 0 | |
+| `99-integracao-real.cy.ts` | 3 | 0 | 0 | 3 pendentes; execução sem `REAL_API=true` |
+
+**Total:** 36 testes contabilizados, 31 aprovados, 2 reprovados e 3 pendentes. Os testes reprovados excederam o tempo limite de 30 s em `cy.screenshot()`; nenhuma captura foi gerada.
 
 ### 2.4 Suítes que já existiam na `dev`
 
@@ -216,7 +220,7 @@ Para acompanhar os testes visualmente, use o modo interativo:
 npm run cypress:open         # escolha "E2E Testing" → navegador → clique no spec
 ```
 
-Nesse modo padrão, a API é **simulada** com `cy.intercept`. O backend não precisa responder, e os dados vêm de `cypress/fixtures/`. Ao final, copie a tabela impressa pelo Cypress para a [seção 2.3](#23-resultados-do-cypress-por-arquivo). Se algum teste falhar, as capturas de tela ficam em `frontend/cypress/screenshots/`.
+Nesse modo padrão, a API é **simulada** com `cy.intercept`. O backend não precisa responder, e os dados vêm de `cypress/fixtures/`. Se algum teste falhar, o Cypress tenta salvar capturas em `frontend/cypress/screenshots/`; na execução registrada acima, a captura excedeu o tempo limite e nenhuma imagem foi gerada.
 
 ### Passo 7 (opcional) — Cypress contra a API real
 
