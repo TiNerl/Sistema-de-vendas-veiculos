@@ -32,7 +32,7 @@ modelagem do sistema (Entrega 1) e testes automatizados com **Jest** e **Cypress
 | **Entrega 1** — Modelagem (10/11) | Casos de uso, arquitetura e estrutura de dados (DER, classes e dicionário), com diagramas em Mermaid | [`docs/entrega-1-modelagem/`](docs/entrega-1-modelagem/README.md) |
 | **Entrega 2** — Backend | Jest + SWC: 184 testes unitários e de API HTTP | [`backend/test-jest/`](backend/test-jest) |
 | **Entrega 2** — Frontend (unidade/componente) | Jest + jsdom + Vue Test Utils: 123 testes | [`frontend/test-jest/`](frontend/test-jest) |
-| **Entrega 2** — Frontend (E2E) | Cypress 16: 33 cenários com API simulada + 3 de integração real | [`frontend/cypress/`](frontend/cypress) |
+| **Entrega 2** — Frontend (E2E) | Cypress 16: 33 cenários com API simulada + 3 de integração real (executados na máquina local) | [`frontend/cypress/`](frontend/cypress) |
 | **Entrega 2** — Relatório | Cobertura, cenários, taxas de sucesso e defeitos | [`docs/entrega-2-testes/RELATORIO-DE-TESTES.md`](docs/entrega-2-testes/RELATORIO-DE-TESTES.md) |
 
 O **código de produção não foi alterado**. As suítes de Vitest e Playwright que já existiam continuam no lugar e convivem com as novas:
@@ -50,83 +50,222 @@ O **código de produção não foi alterado**. As suítes de Vitest e Playwright
 
 Medição de 07/11/2026, sobre o commit `64dd43d` da `dev`, com Node.js 22.
 
-| Suíte | Testes | Sucesso | Statements | Branches | Funções | Linhas |
-|---|---:|---:|---:|---:|---:|---:|
-| Backend — Jest | 184 | **100%** | 97,79% | 87,24% | 90,10% | 97,77% |
-| Frontend — Jest | 123 | **100%** | 94,11% | 89,53% | 89,56% | 95,65% |
-| Frontend — Cypress | 33 (+3 reais) | não executado neste ambiente¹ | — | — | — | — |
+### 2.1 Resumo
 
-¹ O binário do Cypress não pôde ser baixado no ambiente em que a suíte foi escrita. Os specs passam na checagem de tipos (`npm run typecheck:tests`), mas **precisam ser executados localmente**; os resultados entram no relatório (seção 5).
+| Suíte | Testes | Aprovados | Reprovados | Taxa de sucesso | Tempo |
+|---|---:|---:|---:|---:|---:|
+| Backend — Jest | 184 | 184 | 0 | **100%** | ≈ 3,1 s |
+| Frontend — Jest | 123 | 123 | 0 | **100%** | ≈ 3,0 s |
+| Frontend — Cypress (API simulada) | 33 | _preencher_ | _preencher_ | _preencher_ | _preencher_ |
+| Frontend — Cypress (integração real, opcional) | 3 | _preencher_ | _preencher_ | _preencher_ | _preencher_ |
 
-Detalhamento por arquivo, matriz de rastreabilidade e cenários: [relatório de testes](docs/entrega-2-testes/RELATORIO-DE-TESTES.md).
+Dos testes Jest, 12 documentam defeitos conhecidos: 11 com `it.failing` e 1 de registro de comportamento (ver [seção 5](#5-defeitos-encontrados)). Eles aparecem como aprovados enquanto o defeito existir.
+
+### 2.2 Cobertura de código (Jest)
+
+| Suíte | Statements | Branches | Funções | Linhas |
+|---|---:|---:|---:|---:|
+| Backend | 97,79% (400/409) | 87,24% (130/149) | 90,10% (82/91) | 97,77% (395/404) |
+| Frontend | 94,11% (1215/1291) | 89,53% (1087/1214) | 89,56% (266/297) | 95,65% (1146/1198) |
+
+A meta mínima configurada no backend (`coverageThreshold`) é de 80% em statements, funções e linhas, e de 70% em branches.
+
+### 2.3 Resultados do Cypress por arquivo
+
+Preencha esta tabela com a tabela final que o comando `npm run test:e2e:cypress` imprime ([passo 6](#passo-6--testes-e2e-com-cypress)).
+
+| Spec | Casos | Aprovados | Reprovados | Observação |
+|---|---:|---:|---:|---|
+| `01-login.cy.ts` | 7 | | | |
+| `02-controle-de-acesso.cy.ts` | 8 | | | |
+| `03-estoque.cy.ts` | 7 | | | |
+| `04-cadastro-de-veiculo.cy.ts` | 4 | | | |
+| `05-clientes.cy.ts` | 4 | | | |
+| `06-responsividade.cy.ts` | 3 | | | |
+| `99-integracao-real.cy.ts` | 3 | | | Pulado sem `REAL_API=true` |
+
+### 2.4 Suítes que já existiam na `dev`
+
+| Suíte | Resultado |
+|---|---|
+| Backend — Vitest | 17 aprovados · **9 reprovados** (DEF-08) |
+| Frontend — Vitest | 23 aprovados · 0 reprovados |
+
+Detalhamento por arquivo, cenários e rastreabilidade: [relatório de testes](docs/entrega-2-testes/RELATORIO-DE-TESTES.md).
 
 ## 3. Como executar
 
+Os testes rodam **na sua máquina**, e não dentro dos contêineres. O Docker é usado apenas para subir a aplicação (frontend, backend e banco), que os testes E2E acessam pelo navegador.
+
+> **Por que não rodar o Cypress dentro do contêiner do frontend?** A imagem do frontend usa Alpine Linux (`node:26-alpine`), que o Cypress não suporta: o erro `Your system is missing the dependency: Xvfb` é só o primeiro sintoma. Rodar o Cypress na máquina evita o problema sem alterar as imagens do projeto.
+
 ### Pré-requisitos
 
-- Node.js `^22.18` ou `>=24.12`, conforme o `engines` do frontend.
-- Dependências instaladas em cada pacote:
+| Item | Versão | Como verificar |
+|---|---|---|
+| Node.js | `^22.18` ou `>=24.12` | `node -v` |
+| npm | 10 ou superior | `npm -v` |
+| Docker + Docker Compose | qualquer versão recente | `docker compose version` |
+| Arquivo `.env` na raiz | copiado de `.env.example` | `JWT_SECRET` e `VITE_API_URL=http://localhost:3000` preenchidos |
+
+Todos os comandos abaixo partem da **raiz do repositório**. Cada pacote (`backend/` e `frontend/`) tem seu próprio `package.json`, `node_modules` e `jest.config.cjs`, então os testes precisam ser executados **dentro da pasta correspondente**.
+
+| O quê | Pasta | Comando |
+|---|---|---|
+| Subir a aplicação | raiz | `docker compose up -d` |
+| Jest do backend | `backend/` | `npm run test:jest:cov` |
+| Jest do frontend | `frontend/` | `npm run test:jest:cov` |
+| Cypress | `frontend/` | `npm run test:e2e:cypress` |
+
+### Passo 1 — Obter a branch
 
 ```bash
-cd backend  && npm install
-cd ../frontend && npm install
+git fetch origin
+git checkout dev-alt-tests
 ```
 
-> `npm ci` falha hoje no backend porque o `package-lock.json` da `dev` está fora de sincronia com o `package.json` (DEF-08). Esta branch já traz o lockfile regenerado.
-
-### Backend (Jest)
+### Passo 2 — Instalar as dependências na máquina
 
 ```bash
 cd backend
-npm run test:jest          # executa os 184 testes
-npm run test:jest:cov      # com cobertura → backend/coverage-jest/ (abra lcov-report/index.html)
-npm run test:jest:watch    # modo observação, durante o desenvolvimento
+npm install
+cd ../frontend
+npm install
+cd ..
+```
+
+O `node_modules` da sua máquina é independente do que existe dentro dos contêineres (o `docker-compose.yml` monta `/app/node_modules` como volume próprio), então os dois não conflitam.
+
+> Use `npm install`, e não `npm ci`: o `package-lock.json` da `dev` estava fora de sincronia (DEF-08).
+
+### Passo 3 — Testes unitários e de API do backend (Jest)
+
+```bash
+cd backend
+npm run test:jest:cov
+```
+
+Resultado esperado no final da saída:
+
+```
+Test Suites: 10 passed, 10 total
+Tests:       184 passed, 184 total
+```
+
+O relatório HTML de cobertura é gerado em `backend/coverage-jest/lcov-report/index.html`.
+
+Esses testes **não precisam** do Docker nem do banco de dados.
+
+Outros comandos úteis:
+
+```bash
+npm run test:jest                     # sem cobertura (mais rápido)
+npm run test:jest:watch               # reexecuta a cada alteração
 npx jest test-jest/unit/vendas        # apenas uma pasta
 npx jest -t "desconto especial"       # apenas testes cujo nome contém o texto
 ```
 
-Os testes não usam banco de dados: repositórios e transações do TypeORM são substituídos por dublês. Os testes de API HTTP sobem uma aplicação Nest real em memória, com JWT de verdade.
-
-### Frontend (Jest)
+### Passo 4 — Testes unitários e de componentes do frontend (Jest)
 
 ```bash
 cd frontend
-npm run test:jest          # executa os 123 testes
-npm run test:jest:cov      # com cobertura → frontend/coverage-jest/
-npm run typecheck:tests    # checagem de tipos dos testes Jest e Cypress
+npm run test:jest:cov
 ```
 
-### Frontend E2E (Cypress)
+Resultado esperado:
 
-**Modo padrão (API simulada).** Basta o frontend estar rodando; o backend é substituído por `cy.intercept`.
-
-```bash
-# terminal 1
-cd frontend && npm run dev                # http://localhost:5173, com VITE_API_URL=http://localhost:3000
-
-# terminal 2
-cd frontend
-npx cypress install                       # primeira vez: baixa o binário (~250 MB)
-npm run test:e2e:cypress                  # modo headless (CI)
-npm run cypress:open                      # modo interativo
+```
+Test Suites: 9 passed, 9 total
+Tests:       123 passed, 123 total
 ```
 
-**Modo integração real** (`99-integracao-real.cy.ts`). Exige a aplicação completa e um administrador de teste.
+O relatório HTML é gerado em `frontend/coverage-jest/lcov-report/index.html`. Também não depende do Docker.
+
+Para checar os tipos dos testes Jest e Cypress:
 
 ```bash
+npm run typecheck:tests
+```
+
+### Passo 5 — Subir a aplicação
+
+Necessário apenas para o Cypress.
+
+```bash
+# na raiz do repositório
 docker compose up -d
+docker compose ps        # frontend (5173), backend (3000) e postgres (5432) devem estar "running"
+```
+
+Abra `http://localhost:5173` no navegador para confirmar que a tela de login aparece.
+
+> **Alternativa sem Docker:** para os testes com API simulada, basta o frontend. Rode `cd frontend && npm run dev` em um terminal separado e deixe-o aberto.
+
+### Passo 6 — Testes E2E com Cypress
+
+```bash
 cd frontend
-CYPRESS_ADMIN_CPF=11144477735 CYPRESS_ADMIN_SENHA='senha-de-teste' \
+npx cypress install          # só na primeira vez: baixa o navegador do Cypress (~250 MB)
+npx cypress verify           # opcional: confirma a instalação
+npm run test:e2e:cypress     # execução headless; imprime a tabela final de resultados
+```
+
+Para acompanhar os testes visualmente, use o modo interativo:
+
+```bash
+npm run cypress:open         # escolha "E2E Testing" → navegador → clique no spec
+```
+
+Nesse modo padrão, a API é **simulada** com `cy.intercept`. O backend não precisa responder, e os dados vêm de `cypress/fixtures/`. Ao final, copie a tabela impressa pelo Cypress para a [seção 2.3](#23-resultados-do-cypress-por-arquivo). Se algum teste falhar, as capturas de tela ficam em `frontend/cypress/screenshots/`.
+
+### Passo 7 (opcional) — Cypress contra a API real
+
+Esse modo executa `99-integracao-real.cy.ts` com a aplicação completa e exige um **administrador de teste** cadastrado no banco.
+
+**Linux, macOS e Git Bash:**
+
+```bash
+cd frontend
+CYPRESS_ADMIN_CPF=11144477735 CYPRESS_ADMIN_SENHA='sua-senha' \
   npx cypress run --expose REAL_API=true
 ```
 
-> No Cypress 16, valores públicos são lidos com `Cypress.expose()` (configurados em `expose` ou por `--expose`), e segredos com `cy.env()` (variáveis `CYPRESS_*`). Se a sua versão local for anterior à 16, troque `--expose` por `--env`.
+**Windows (PowerShell):**
+
+```powershell
+cd frontend
+$env:CYPRESS_ADMIN_CPF="11144477735"; $env:CYPRESS_ADMIN_SENHA="sua-senha"
+npx cypress run --expose REAL_API=true
+```
+
+**Windows (Prompt de Comando):**
+
+```bat
+cd frontend
+set CYPRESS_ADMIN_CPF=11144477735
+set CYPRESS_ADMIN_SENHA=sua-senha
+npx cypress run --expose REAL_API=true
+```
+
+> Enquanto o DEF-01 não for corrigido, o teste `[DEF-01] GET /veiculos?anoMin=2020 deveria responder 200` **reprova** nesse modo. Isso é esperado e comprova o defeito.
 
 ### Tudo de uma vez
 
 ```bash
-(cd backend && npm run test:jest:cov) && (cd frontend && npm run test:jest:cov)
+(cd backend && npm run test:jest:cov) && (cd frontend && npm run test:jest:cov && npm run test:e2e:cypress)
 ```
+
+### Problemas comuns
+
+| Sintoma | Causa | Solução |
+|---|---|---|
+| `No tests found` | Comando executado na raiz | Entre em `backend/` ou `frontend/` |
+| `Your system is missing the dependency: Xvfb` | Cypress executado dentro do contêiner Alpine | Execute na máquina (passo 6) |
+| `Cypress verification failed` / binário ausente | Binário não baixado | `npx cypress install` |
+| `cy.visit() failed trying to load http://localhost:5173` | Frontend não está rodando | Passo 5, ou `npm run dev` em `frontend/` |
+| Testes de login/estoque falham com requisições não interceptadas | `VITE_API_URL` diferente de `http://localhost:3000` | Ajuste o `.env`, ou rode com `--expose apiUrl=<sua URL>` |
+| `npm ci` falha no backend | Lockfile dessincronizado (DEF-08) | Use `npm install` |
+| `Error: listen EADDRINUSE :5173` ao rodar `npm run dev` | O contêiner do frontend já ocupa a porta | Use só um dos dois: Docker **ou** `npm run dev` |
 
 ## 4. Organização dos testes
 
