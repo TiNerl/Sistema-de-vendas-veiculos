@@ -113,7 +113,7 @@ export class VendasService {
     async buscarTodas(dto: FiltrarVendasDto): Promise<Venda[]> {
         const { cliente_id, dataInicio, dataFim } = dto;
 
-        // Regra de Negócio: Data inicial não pode ser posterior à data final
+        
         if (dataInicio && dataFim && new Date(dataInicio) > new Date(dataFim)) {
             throw new BadRequestException('A data inicial não pode ser posterior à data final');
         }
@@ -156,7 +156,8 @@ export class VendasService {
         }
 
         return venda;
-      
+    }
+
     async aprovar(id: number) {
         return this.dataSource.transaction(async (manager) => {
             const venda = await manager.findOne(Venda, {
