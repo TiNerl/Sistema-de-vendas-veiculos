@@ -29,6 +29,13 @@ export class VendasController {
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin', 'vendedor')
+    @Get(':id')
+    buscarPorId(@Param('id', ParseIntPipe) id: number) {
+        return this.vendasService.buscarPorId(id);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
     @Patch(':id/aprovar')
     aprovar(@Param('id', ParseIntPipe) id:number) {

@@ -20,7 +20,7 @@ const itensNavegacao = [
     icon: 'M16 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-5A4.5 4.5 0 0 0 2 18.5V20m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm9-2v6m3-3h-6',
   },
   {
-    label: 'Veículos / estoque',
+    label: 'Estoque de veículos',
     to: '/vendedor/veiculos',
     icon: 'M3 13l2-6h14l2 6v6h-3v-2H6v2H3v-6Zm2 0h14M7 16h.1M17 16h.1',
   },

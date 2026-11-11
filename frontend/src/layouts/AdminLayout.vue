@@ -65,8 +65,7 @@ async function sair() {
             <span>Início</span>
           </RouterLink>
         </div>
-
-        <template v-if="administrador">
+       <template v-if="administrador">
           <span class="nav-label">Gestão de vendas</span>
           <div class="sidebar-nav">
             <RouterLink
@@ -80,6 +79,7 @@ async function sair() {
               </svg>
               <span>Histórico de Vendas</span>
             </RouterLink>
+
             <RouterLink
               class="sidebar-link"
               exact-active-class="sidebar-link--current"
@@ -93,6 +93,20 @@ async function sair() {
             </RouterLink>
           </div>
 
+          <span class="nav-label">Gestão de estoque</span>
+          <div class="sidebar-nav">
+            <RouterLink
+              class="sidebar-link"
+              exact-active-class="sidebar-link--current"
+              to="/admin/veiculos"
+              @click="menuAberto = false"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 13l2-6h14l2 6v6h-3v-2H6v2H3v-6Zm2 0h14M7 16h.1M17 16h.1" />
+              </svg>
+              <span>Estoque de veículos</span>
+            </RouterLink>
+          </div>
           <span class="nav-label">Gestão de clientes</span>
           <div class="sidebar-nav">
             <RouterLink
