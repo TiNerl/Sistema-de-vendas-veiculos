@@ -1,4 +1,4 @@
-import { Query, Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Patch, UseGuards } from '@nestjs/common';
+import { Query, Body, Controller, Get, Param, ParseIntPipe, Post, Patch, UseGuards } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -48,12 +48,5 @@ export class VeiculosController {
         @Body() dto: AtualizarStatusVeiculoDto,
     ) {
         return this.veiculosService.atualizarStatus(id, dto.status);
-    }
-
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('admin')
-    @Delete(':id')
-    excluir(@Param('id', ParseIntPipe) id: number) {
-        return this.veiculosService.excluir(id);
     }
 }

@@ -11,7 +11,6 @@ import { Veiculo } from './veiculo.entity';
 import { StatusVeiculo } from './veiculo-status.enum';
 import { AtualizarVeiculoDto } from './dto/atualizar-veiculo.dto';
 import { FiltrarVeiculosDto } from './dto/filtrar-veiculos.dto';
-import { Venda } from '../vendas/venda.entity';
 
 @Injectable()
 export class VeiculosService {
@@ -186,31 +185,6 @@ export class VeiculosService {
 
             veiculo.status = status;
             return manager.save(Veiculo, veiculo);
-        });
-    }
-
-    async excluir(id: number) {
-        return this.dataSource.transaction(async (manager) => {
-            const veiculo = await manager.findOne(Veiculo, {
-                where: { id_veiculo: id },
-            });
-
-            if (!veiculo) {
-                throw new NotFoundException('Veículo não encontrado');
-            }
-
-            const venda = await manager.findOne(Venda, {
-                where: { veiculo: { id_veiculo: id } },
-            });
-
-            if (venda) {
-                throw new ConflictException(
-                    'Não é possível excluir um veículo com histórico de venda',
-                );
-            }
-
-            await manager.remove(Veiculo, veiculo);
-            return { id_veiculo: id };
         });
     }
 }

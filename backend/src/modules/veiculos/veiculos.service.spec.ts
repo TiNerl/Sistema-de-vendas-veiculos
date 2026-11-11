@@ -9,7 +9,6 @@ import { FiltrarVeiculosDto } from './dto/filtrar-veiculos.dto';
 import { Veiculo } from './veiculo.entity';
 import { VeiculosService } from './veiculos.service';
 import { StatusVeiculo } from './veiculo-status.enum';
-import { Venda } from '../vendas/venda.entity';
 
 describe('VeiculosService', () => {
     const dto: CriarVeiculoDto = {
@@ -42,7 +41,6 @@ describe('VeiculosService', () => {
     const manager = {
         findOne: vi.fn(),
         save: vi.fn(),
-        remove: vi.fn(),
     };
     const dataSource = {
         transaction: vi.fn(),
@@ -59,7 +57,6 @@ describe('VeiculosService', () => {
         queryBuilder.getMany.mockResolvedValue([]);
         manager.findOne.mockResolvedValue(null);
         manager.save.mockImplementation(async (_entity, value) => value);
-        manager.remove.mockImplementation(async (_entity, value) => value);
         dataSource.transaction.mockImplementation(
             async (operation: (transactionManager: typeof manager) => unknown) =>
                 operation(manager),
@@ -183,25 +180,4 @@ describe('VeiculosService', () => {
         expect(manager.save).toHaveBeenCalledWith(Veiculo, veiculo);
     });
 
-    it('impede exclusão de veículo com histórico de venda', async () => {
-        manager.findOne
-            .mockResolvedValueOnce({ id_veiculo: 1 })
-            .mockResolvedValueOnce({ id_venda: 9 });
-
-        await expect(service.excluir(1)).rejects.toBeInstanceOf(ConflictException);
-        expect(manager.remove).not.toHaveBeenCalled();
-    });
-
-    it('exclui veículo sem registros de venda e retorna seu identificador', async () => {
-        const veiculo = { id_veiculo: 1 };
-        manager.findOne
-            .mockResolvedValueOnce(veiculo)
-            .mockResolvedValueOnce(null);
-
-        await expect(service.excluir(1)).resolves.toEqual({ id_veiculo: 1 });
-        expect(manager.findOne).toHaveBeenNthCalledWith(2, Venda, {
-            where: { veiculo: { id_veiculo: 1 } },
-        });
-        expect(manager.remove).toHaveBeenCalledWith(Veiculo, veiculo);
-    });
 });
