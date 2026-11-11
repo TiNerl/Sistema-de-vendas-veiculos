@@ -11,6 +11,7 @@ import ModuloVendedorView from '@/views/ModuloVendedorView.vue'
 import VeiculosVendedorView from '@/views/VeiculosVendedorView.vue'
 import ClientesView from '@/views/ClientesView.vue'
 import CadastrarClienteView from '@/views/CadastrarClienteView.vue'
+import CadastrarVeiculoView from '@/views/CadastrarVeiculoView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
@@ -61,6 +62,36 @@ const router = createRouter({
             requerAutenticacao: true,
             apenasAdministrador: true,
             titulo: 'Clientes',
+          },
+        },
+        {
+          path: 'admin/veiculos',
+          name: 'admin-veiculos',
+          component: VeiculosVendedorView,
+          meta: {
+            requerAutenticacao: true,
+            apenasAdministrador: true,
+            titulo: 'Estoque de Veículos',
+          },
+        },
+        {
+          path: 'admin/veiculos/cadastrar',
+          name: 'admin-cadastrar-veiculo',
+          component: CadastrarVeiculoView,
+          meta: {
+            requerAutenticacao: true,
+            apenasAdministrador: true,
+            titulo: 'Cadastrar Veículo',
+          },
+        },
+        {
+          path: 'admin/veiculos/:id/editar',
+          name: 'admin-editar-veiculo',
+          component: CadastrarVeiculoView,
+          meta: {
+            requerAutenticacao: true,
+            apenasAdministrador: true,
+            titulo: 'Editar Veículo',
           },
         },
         {
@@ -138,7 +169,19 @@ const router = createRouter({
           path: 'veiculos',
           name: 'vendedor-veiculos',
           component: VeiculosVendedorView,
-          meta: { titulo: 'Veículos / estoque' },
+          meta: { titulo: 'Estoque de Veículos' },
+        },
+        {
+          path: 'veiculos/cadastrar',
+          name: 'vendedor-cadastrar-veiculo',
+          component: CadastrarVeiculoView,
+          meta: { titulo: 'Cadastrar Veículo' },
+        },
+        {
+          path: 'veiculos/:id/editar',
+          name: 'vendedor-editar-veiculo',
+          component: CadastrarVeiculoView,
+          meta: { titulo: 'Editar Veículo' },
         },
         {
           path: 'vendas',
@@ -195,6 +238,12 @@ router.beforeEach(async (to) => {
   if (apenasVendedor && auth.usuario?.perfil !== 'vendedor') {
     return auth.usuario?.perfil === 'admin'
       ? { name: 'dashboard' }
+      : { name: 'login' }
+  }
+
+  if (to.name === 'admin-veiculos' && auth.usuario?.perfil !== 'admin') {
+    return auth.usuario?.perfil === 'vendedor'
+      ? { name: 'vendedor-veiculos' }
       : { name: 'login' }
   }
 

@@ -1,8 +1,19 @@
 import { api } from './api'
 import type { StatusVeiculo, Veiculo, VeiculoInput } from '../types/veiculo'
 
-export async function listarVeiculos(): Promise<Veiculo[]> {
-    const resposta = await api.get<Veiculo[]>('/veiculos')
+export type FiltrosVeiculos = {
+    marca?: string
+    modelo?: string
+    precoMin?: number
+    precoMax?: number
+    anoMin?: number
+    anoMax?: number
+    combustivel?: string
+    status?: StatusVeiculo
+}
+
+export async function listarVeiculos(filtros: FiltrosVeiculos = {}): Promise<Veiculo[]> {
+    const resposta = await api.get<Veiculo[]>('/veiculos', { params: filtros })
     return resposta.data
 }
 
