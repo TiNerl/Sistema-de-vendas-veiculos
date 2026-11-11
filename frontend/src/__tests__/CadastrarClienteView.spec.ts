@@ -7,14 +7,15 @@ import {
   atualizarCliente,
   buscarCliente,
   cadastrarCliente,
+  listarClientes,
 } from '@/services/clientes.service'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/services/clientes.service', () => ({
-  atualizarCliente: vi.fn(),
-  buscarCliente: vi.fn(),
-  cadastrarCliente: vi.fn(),
-  listarClientes: vi.fn(),
+  atualizarCliente: vi.fn<typeof atualizarCliente>(),
+  buscarCliente: vi.fn<typeof buscarCliente>(),
+  cadastrarCliente: vi.fn<typeof cadastrarCliente>(),
+  listarClientes: vi.fn<typeof listarClientes>(),
 }))
 
 const clienteResposta = {

@@ -9,15 +9,15 @@ import { cadastrarVenda } from '@/services/vendas.service'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/services/clientes.service', () => ({
-  listarClientes: vi.fn(),
+  listarClientes: vi.fn<typeof listarClientes>(),
 }))
 
 vi.mock('@/services/veiculos.service', () => ({
-  listarVeiculos: vi.fn(),
+  listarVeiculos: vi.fn<typeof listarVeiculos>(),
 }))
 
 vi.mock('@/services/vendas.service', () => ({
-  cadastrarVenda: vi.fn(),
+  cadastrarVenda: vi.fn<typeof cadastrarVenda>(),
 }))
 
 describe('CadastrarVendaView', () => {
@@ -139,8 +139,7 @@ describe('CadastrarVendaView', () => {
       await wrapper.get('form').trigger('submit')
       await flushPromises()
 
-      expect(cadastrarVenda).toHaveBeenCalledOnce()
-      expect(cadastrarVenda).toHaveBeenCalledWith({
+      expect(cadastrarVenda).toHaveBeenCalledExactlyOnceWith({
         id_cliente: 7,
         id_veiculo: 3,
         forma_pagamento: 'a_vista',

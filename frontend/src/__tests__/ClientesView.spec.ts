@@ -7,8 +7,8 @@ import { inativarCliente, listarClientes } from '@/services/clientes.service'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/services/clientes.service', () => ({
-  inativarCliente: vi.fn(),
-  listarClientes: vi.fn(),
+  inativarCliente: vi.fn<typeof inativarCliente>(),
+  listarClientes: vi.fn<typeof listarClientes>(),
 }))
 
 const clientesDeTeste = [

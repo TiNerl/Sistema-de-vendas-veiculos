@@ -64,6 +64,7 @@ describe('controle de acesso das rotas', () => {
     expect(router.currentRoute.value.name).toBe('admin-clientes')
   })
 
+  // Testes da branch feature/FRONTEND-valores-e-descontos
   it('permite que vendedor acesse suas solicitações de desconto', async () => {
     const auth = useAuthStore()
     auth.token = 'token-de-teste'
@@ -84,5 +85,28 @@ describe('controle de acesso das rotas', () => {
     await router.push('/admin/descontos?case=admin-descontos')
 
     expect(router.currentRoute.value.name).toBe('admin-solicitacoes-desconto')
+  })
+
+  // Testes da branch dev
+  it('permite que vendedor acesse a listagem do estoque', async () => {
+    const auth = useAuthStore()
+    auth.token = 'token-de-teste'
+    auth.autenticado = true
+    auth.usuario = { id: 2, cpf: '00000000000', perfil: 'vendedor' }
+
+    await router.push('/vendedor/veiculos?case=seller-vehicles')
+
+    expect(router.currentRoute.value.name).toBe('vendedor-veiculos')
+  })
+
+  it('permite que administrador acesse a listagem do estoque', async () => {
+    const auth = useAuthStore()
+    auth.token = 'token-de-teste'
+    auth.autenticado = true
+    auth.usuario = { id: 1, cpf: '11111111111', perfil: 'admin' }
+
+    await router.push('/admin/veiculos?case=admin-vehicles')
+
+    expect(router.currentRoute.value.name).toBe('admin-veiculos')
   })
 })

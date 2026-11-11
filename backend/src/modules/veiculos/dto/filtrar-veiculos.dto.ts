@@ -1,4 +1,3 @@
-
 import { Type } from 'class-transformer';
 import {
     IsEnum,
@@ -42,6 +41,20 @@ export class FiltrarVeiculosDto {
     @Min(1886)
     @Max(2100)
     ano?: number;
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1886)
+    @Max(2100)
+    anoMin?: number;
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1886)
+    @Max(2100)
+    anoMax?: number;
 
     @IsOptional()
     @IsString()

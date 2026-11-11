@@ -4,9 +4,9 @@ import { aprovarVenda, cadastrarVenda, rejeitarVenda } from '@/services/vendas.s
 
 vi.mock('@/services/api', () => ({
   api: {
-    get: vi.fn(),
-    patch: vi.fn(),
-    post: vi.fn(),
+    get: vi.fn<typeof api.get>(),
+    patch: vi.fn<typeof api.patch>(),
+    post: vi.fn<typeof api.post>(),
   },
 }))
 

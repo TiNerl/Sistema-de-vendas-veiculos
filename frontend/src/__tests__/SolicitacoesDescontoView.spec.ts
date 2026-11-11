@@ -8,9 +8,9 @@ import type { VendaRegistrada } from '@/services/vendas.service'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/services/vendas.service', () => ({
-  aprovarVenda: vi.fn(),
-  listarVendas: vi.fn(),
-  rejeitarVenda: vi.fn(),
+  aprovarVenda: vi.fn<typeof aprovarVenda>(),
+  listarVendas: vi.fn<typeof listarVendas>(),
+  rejeitarVenda: vi.fn<typeof rejeitarVenda>(),
 }))
 
 const vendaPendente: VendaRegistrada = {

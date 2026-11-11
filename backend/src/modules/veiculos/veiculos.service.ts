@@ -5,18 +5,20 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Not, Repository } from 'typeorm';
+import { DataSource, ILike, Not, Repository } from 'typeorm';
 import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
 import { Veiculo } from './veiculo.entity';
 import { StatusVeiculo } from './veiculo-status.enum';
 import { AtualizarVeiculoDto } from './dto/atualizar-veiculo.dto';
 import { FiltrarVeiculosDto } from './dto/filtrar-veiculos.dto';
+import { Venda } from '../vendas/venda.entity';
 
 @Injectable()
 export class VeiculosService {
     constructor(
         @InjectRepository(Veiculo)
         private readonly repository: Repository<Veiculo>,
+        private readonly dataSource: DataSource,
     ) { }
 
     async cadastrar(dto: CriarVeiculoDto) {
@@ -42,18 +44,19 @@ export class VeiculosService {
     }
 
 
-    async listar(dto: FiltrarVeiculosDto) {
+    async filtrar(dto: FiltrarVeiculosDto) {
         const {
             marca,
             modelo,
             precoMin,
             precoMax,
             ano,
+            anoMin,
+            anoMax,
             combustivel,
             status,
         } = dto;
 
-        // Valida a faixa de preço
         if (
             precoMin !== undefined &&
             precoMax !== undefined &&
@@ -64,14 +67,23 @@ export class VeiculosService {
             );
         }
 
-        const query = this.repository.createQueryBuilder('veiculo');
-
-        if (marca) {
-            query.andWhere({ marca: ILike(`%${marca}%`) });
+        if (anoMin !== undefined && anoMax !== undefined && anoMin > anoMax) {
+            throw new BadRequestException(
+                'O ano inicial não pode ser maior que o ano final',
+            );
         }
 
-        if (modelo) {
-            query.andWhere({ modelo: ILike(`%${modelo}%`) });
+        const query = this.repository.createQueryBuilder('veiculo');
+
+        const marcaNormalizada = marca?.trim();
+        const modeloNormalizado = modelo?.trim();
+
+        if (marcaNormalizada) {
+            query.andWhere({ marca: ILike(`%${marcaNormalizada}%`) });
+        }
+
+        if (modeloNormalizado) {
+            query.andWhere({ modelo: ILike(`%${modeloNormalizado}%`) });
         }
 
         if (precoMin !== undefined) {
@@ -88,6 +100,14 @@ export class VeiculosService {
 
         if (ano !== undefined) {
             query.andWhere('veiculo.ano = :ano', { ano });
+        }
+
+        if (anoMin !== undefined) {
+            query.andWhere('veiculo.ano >= :anoMin', { anoMin });
+        }
+
+        if (anoMax !== undefined) {
+            query.andWhere('veiculo.ano <= :anoMax', { anoMax });
         }
 
         if (combustivel) {
@@ -155,8 +175,42 @@ export class VeiculosService {
     }
 
     async atualizarStatus(id: number, status: StatusVeiculo) {
-        const veiculo = await this.buscarPorId(id);
-        veiculo.status = status;
-        return this.repository.save(veiculo);
+        return this.dataSource.transaction(async (manager) => {
+            const veiculo = await manager.findOne(Veiculo, {
+                where: { id_veiculo: id },
+            });
+
+            if (!veiculo) {
+                throw new NotFoundException('Veículo não encontrado');
+            }
+
+            veiculo.status = status;
+            return manager.save(Veiculo, veiculo);
+        });
+    }
+
+    async excluir(id: number) {
+        return this.dataSource.transaction(async (manager) => {
+            const veiculo = await manager.findOne(Veiculo, {
+                where: { id_veiculo: id },
+            });
+
+            if (!veiculo) {
+                throw new NotFoundException('Veículo não encontrado');
+            }
+
+            const venda = await manager.findOne(Venda, {
+                where: { veiculo: { id_veiculo: id } },
+            });
+
+            if (venda) {
+                throw new ConflictException(
+                    'Não é possível excluir um veículo com histórico de venda',
+                );
+            }
+
+            await manager.remove(Veiculo, veiculo);
+            return { id_veiculo: id };
+        });
     }
 }

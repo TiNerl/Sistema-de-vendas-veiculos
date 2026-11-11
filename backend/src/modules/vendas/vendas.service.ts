@@ -110,7 +110,10 @@ export class VendasService {
         });
     }
 
-    async buscarTodas(dto: FiltrarVendasDto): Promise<Venda[]> {
+    async buscarTodas(
+        dto: FiltrarVendasDto,
+        usuario?: { id: number; perfil: string },
+    ): Promise<Venda[]> {
         const { cliente_id, dataInicio, dataFim } = dto;
 
         // Regra de Negócio: Data inicial não pode ser posterior à data final
@@ -122,6 +125,12 @@ export class VendasService {
             .leftJoinAndSelect('venda.cliente', 'cliente')
             .leftJoinAndSelect('venda.veiculo', 'veiculo')
             .leftJoinAndSelect('venda.usuario', 'usuario');
+
+        if (usuario?.perfil === 'vendedor') {
+            query.andWhere('usuario.id_usuario = :usuarioId', {
+                usuarioId: usuario.id,
+            });
+        }
 
         if (cliente_id !== undefined) {
             query.andWhere('cliente.id_cliente = :cliente_id', { cliente_id });
@@ -139,6 +148,30 @@ export class VendasService {
         }
 
         return await query.orderBy('venda.data_venda', 'DESC').getMany();
+    }
+
+    async buscarPorId(
+        id: number,
+        usuario?: { id: number; perfil: string },
+    ): Promise<Venda> {
+        const where = usuario?.perfil === 'vendedor'
+            ? { id_venda: id, usuario: { id_usuario: usuario.id } }
+            : { id_venda: id };
+
+        const venda = await this.repository.findOne({
+            where,
+            relations: {
+                cliente: true,
+                veiculo: true,
+                usuario: true,
+            },
+        });
+
+        if (!venda) {
+            throw new NotFoundException('Venda não encontrada');
+        }
+
+        return venda;
     }
 
     async aprovar(id: number) {

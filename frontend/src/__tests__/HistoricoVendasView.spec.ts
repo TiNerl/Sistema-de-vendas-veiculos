@@ -9,11 +9,11 @@ import type { VendaRegistrada } from '@/services/vendas.service'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/services/clientes.service', () => ({
-  listarClientes: vi.fn(),
+  listarClientes: vi.fn<typeof listarClientes>(),
 }))
 
 vi.mock('@/services/vendas.service', () => ({
-  listarVendas: vi.fn(),
+  listarVendas: vi.fn<typeof listarVendas>(),
 }))
 
 const vendasDeTeste: VendaRegistrada[] = [
