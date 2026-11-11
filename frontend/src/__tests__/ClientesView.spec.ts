@@ -7,8 +7,8 @@ import { inativarCliente, listarClientes } from '@/services/clientes.service'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/services/clientes.service', () => ({
-  inativarCliente: vi.fn(),
-  listarClientes: vi.fn(),
+  inativarCliente: vi.fn<typeof inativarCliente>(),
+  listarClientes: vi.fn<typeof listarClientes>(),
 }))
 
 const clientesDeTeste = [
@@ -146,7 +146,7 @@ describe('ClientesView', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('Não foi possível inativar o cliente')
   })
 
-  it('explica que o histórico depende de um endpoint de consulta inexistente', async () => {
+  it('abre o histórico de vendas filtrado pelo cliente selecionado', async () => {
     vi.mocked(listarClientes).mockResolvedValue(clientesDeTeste)
 
     const router = createRouter({
@@ -171,8 +171,8 @@ describe('ClientesView', () => {
     await wrapper.get('button[aria-label="Ver detalhes de Ana Silva"]').trigger('click')
     await wrapper.get('button[aria-expanded="false"]').trigger('click')
 
-    expect(wrapper.get('[role="status"]').text()).toContain(
-      'não possui endpoint para listar vendas por cliente',
+    expect(wrapper.get('.history-section a').attributes('href')).toBe(
+      '/vendedor/vendas/historico?cliente_id=1',
     )
   })
 })

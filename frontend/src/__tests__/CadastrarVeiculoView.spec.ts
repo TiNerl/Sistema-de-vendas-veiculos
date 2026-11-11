@@ -12,9 +12,9 @@ import { useAuthStore } from '@/stores/auth'
 import type { Veiculo } from '@/types/veiculo'
 
 vi.mock('@/services/veiculos.service', () => ({
-  atualizarVeiculo: vi.fn(),
-  buscarVeiculo: vi.fn(),
-  cadastrarVeiculo: vi.fn(),
+  atualizarVeiculo: vi.fn<typeof atualizarVeiculo>(),
+  buscarVeiculo: vi.fn<typeof buscarVeiculo>(),
+  cadastrarVeiculo: vi.fn<typeof cadastrarVeiculo>(),
 }))
 
 const veiculo: Veiculo = {

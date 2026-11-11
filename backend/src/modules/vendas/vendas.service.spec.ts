@@ -20,9 +20,17 @@ describe('VendasService', () => {
   const mockDataSource = {
     transaction: vi.fn(),
   };
+  const queryBuilder = {
+    leftJoinAndSelect: vi.fn().mockReturnThis(),
+    andWhere: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    getMany: vi.fn(),
+  };
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    mockVendaRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+    queryBuilder.getMany.mockResolvedValue([]);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         VendasService,
@@ -63,5 +71,30 @@ describe('VendasService', () => {
     mockVendaRepository.findOne.mockResolvedValue(null);
 
     await expect(service.buscarPorId(404)).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('limita a listagem de vendas ao vendedor autenticado', async () => {
+    await service.buscarTodas({}, { id: 2, perfil: 'vendedor' });
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'usuario.id_usuario = :usuarioId',
+      { usuarioId: 2 },
+    );
+  });
+
+  it('limita a busca individual de vendas ao vendedor autenticado', async () => {
+    mockVendaRepository.findOne.mockResolvedValue(null);
+
+    await expect(
+      service.buscarPorId(42, { id: 2, perfil: 'vendedor' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(mockVendaRepository.findOne).toHaveBeenCalledWith({
+      where: { id_venda: 42, usuario: { id_usuario: 2 } },
+      relations: {
+        cliente: true,
+        veiculo: true,
+        usuario: true,
+      },
+    });
   });
 });

@@ -87,6 +87,13 @@ function rotaEdicao(id: number): string {
     : `/admin/clientes/${id}/editar`
 }
 
+function rotaHistorico(clienteId: number): string {
+  const rota = auth.usuario?.perfil === 'vendedor'
+    ? '/vendedor/vendas/historico'
+    : '/admin/vendas'
+  return `${rota}?cliente_id=${clienteId}`
+}
+
 function abrirConfirmacaoInativacao(cliente: Cliente) {
   clienteParaInativar.value = cliente
   erroInativacao.value = ''
@@ -319,10 +326,13 @@ onUnmounted(() => {
           >
             {{ historicoAberto ? 'Ocultar histórico de compras' : 'Histórico de compras' }}
           </button>
-          <div v-if="historicoAberto" class="alert alert--info history-unavailable" role="status">
-            O histórico ainda não pode ser consultado: o backend disponibiliza o cadastro de
-            vendas, mas não possui endpoint para listar vendas por cliente.
-          </div>
+          <RouterLink
+            v-if="historicoAberto"
+            class="button button--secondary"
+            :to="rotaHistorico(clienteSelecionado.id_cliente)"
+          >
+            Consultar vendas deste cliente
+          </RouterLink>
         </div>
 
         <div class="dialog-actions">

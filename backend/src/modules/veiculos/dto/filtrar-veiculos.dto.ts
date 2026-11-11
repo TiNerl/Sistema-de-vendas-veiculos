@@ -43,6 +43,20 @@ export class FiltrarVeiculosDto {
     ano?: number;
 
     @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1886)
+    @Max(2100)
+    anoMin?: number;
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1886)
+    @Max(2100)
+    anoMax?: number;
+
+    @IsOptional()
     @IsString()
     @IsIn(['gasolina', 'etanol', 'flex', 'diesel', 'eletrico', 'hibrido'])
     combustivel?: string;

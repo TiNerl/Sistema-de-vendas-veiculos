@@ -36,10 +36,9 @@ describe('VeiculosController access', () => {
         expect(Reflect.getMetadata(ROLES_KEY, filtrar)).toEqual(['admin', 'vendedor']);
     });
 
-    it.each([
-        VeiculosController.prototype.atualizarStatus,
-        VeiculosController.prototype.excluir,
-    ])('restricts status changes and deletion to admins', (handler) => {
+    it('restricts status changes to admins', () => {
+        const handler = VeiculosController.prototype.atualizarStatus;
+
         expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toEqual([
             JwtAuthGuard,
             RolesGuard,

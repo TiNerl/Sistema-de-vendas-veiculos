@@ -12,6 +12,9 @@ import VeiculosVendedorView from '@/views/VeiculosVendedorView.vue'
 import ClientesView from '@/views/ClientesView.vue'
 import CadastrarClienteView from '@/views/CadastrarClienteView.vue'
 import CadastrarVeiculoView from '@/views/CadastrarVeiculoView.vue'
+import CadastrarVendaView from '@/views/CadastrarVendaView.vue'
+import HistoricoVendasView from '@/views/HistoricoVendasView.vue'
+import SolicitacoesDescontoView from '@/views/SolicitacoesDescontoView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
@@ -134,6 +137,26 @@ const router = createRouter({
             titulo: 'Inativar usuário',
           },
         },
+        {
+          path: 'admin/vendas',
+          name: 'admin-historico-vendas',
+          component: HistoricoVendasView,
+          meta: {
+            requerAutenticacao: true,
+            apenasAdministrador: true,
+            titulo: 'Histórico de Vendas',
+          },
+        },
+        {
+          path: 'admin/descontos',
+          name: 'admin-solicitacoes-desconto',
+          component: SolicitacoesDescontoView,
+          meta: {
+            requerAutenticacao: true,
+            apenasAdministrador: true,
+            titulo: 'Aprovação de descontos',
+          },
+        },
       ],
     },
     {
@@ -186,8 +209,20 @@ const router = createRouter({
         {
           path: 'vendas',
           name: 'vendedor-vendas',
-          component: ModuloVendedorView,
-          meta: { titulo: 'Vendas' },
+          component: CadastrarVendaView,
+          meta: { titulo: 'Registrar venda' },
+        },
+        {
+          path: 'vendas/historico',
+          name: 'vendedor-historico-vendas',
+          component: HistoricoVendasView,
+          meta: { titulo: 'Histórico de Vendas' },
+        },
+        {
+          path: 'descontos',
+          name: 'vendedor-solicitacoes-desconto',
+          component: SolicitacoesDescontoView,
+          meta: { titulo: 'Minhas solicitações' },
         },
         {
           path: 'test-drives',
