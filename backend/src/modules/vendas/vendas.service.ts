@@ -116,7 +116,7 @@ export class VendasService {
     ): Promise<Venda[]> {
         const { cliente_id, dataInicio, dataFim } = dto;
 
-        // Regra de Negócio: Data inicial não pode ser posterior à data final
+        
         if (dataInicio && dataFim && new Date(dataInicio) > new Date(dataFim)) {
             throw new BadRequestException('A data inicial não pode ser posterior à data final');
         }

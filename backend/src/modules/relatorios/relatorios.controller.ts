@@ -15,4 +15,11 @@ export class RelatoriosController {
         gerarRelatorioFaturamento(@Query() filtro: FiltrarRelatorioFaturamentoDto) {
             return this.relatoriosService.gerarRelatorioFaturamento(filtro);
         }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin', 'vendedor')
+    @Get('estoque')
+    gerarRelatorioEstoque() {
+        return this.relatoriosService.gerarRelatorioEstoque();
+    }
 }
