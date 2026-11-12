@@ -1,9 +1,17 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { RelatoriosService } from './relatorios.service';
 import { FiltrarRelatorioFaturamentoDto } from './dto/filtrar-relatorio-faturamento.dto';
+import { FiltrarRelatorioDesempenhoDto } from './dto/filtrar-relatorio-desempenho.dto';
+
+type RequisicaoAutenticada = {
+    user: {
+        id: number;
+        perfil: string;
+    }
+};
 
 @Controller('relatorios')
 export class RelatoriosController {
@@ -21,5 +29,12 @@ export class RelatoriosController {
     @Get('estoque')
     gerarRelatorioEstoque() {
         return this.relatoriosService.gerarRelatorioEstoque();
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin', 'vendedor')
+    @Get('desempenho-vendedores')
+    gerarRelatorioDesempenhoVendedores(@Query() filtro: FiltrarRelatorioDesempenhoDto, @Req() request: RequisicaoAutenticada) {
+        return this.relatoriosService.gerarRelatorioDesempenhoVendedores(filtro, request.user);
     }
 }
