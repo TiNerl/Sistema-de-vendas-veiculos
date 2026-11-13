@@ -5,12 +5,20 @@ import { Repository } from 'typeorm';
 import { FiltrarRelatorioFaturamentoDto } from './dto/filtrar-relatorio-faturamento.dto';
 import { Veiculo } from '../veiculos/veiculo.entity';
 import { StatusVeiculo } from '../veiculos/veiculo-status.enum';
+import { Usuario } from '../usuarios/usuario.entity';
+import { FiltrarRelatorioDesempenhoDto } from './dto/filtrar-relatorio-desempenho.dto';
+
+type UsuarioRelatorio = {
+    id: number,
+    perfil: string,
+}
 
 @Injectable()
 export class RelatoriosService {
     constructor(
         @InjectRepository(Venda) private readonly vendaRepository: Repository<Venda>,
         @InjectRepository(Veiculo) private readonly veiculoRepository: Repository<Veiculo>,
+        @InjectRepository(Usuario) private readonly usuarioRepository: Repository<Usuario>,
     ) { }
 
     async gerarRelatorioFaturamento(filtro: FiltrarRelatorioFaturamentoDto) {
@@ -34,7 +42,7 @@ export class RelatoriosService {
                 { dataFim: filtro.dataFim },
             );
         }
-        
+
         const relatorio = await query
             .select('EXTRACT(YEAR FROM venda.data_venda)', 'ano')
             .addSelect('EXTRACT(MONTH FROM venda.data_venda)', 'mes')
@@ -73,5 +81,51 @@ export class RelatoriosService {
                 valor_total: Number(total?.valor_total ?? 0),
             };
         });
+    }
+
+    async gerarRelatorioDesempenhoVendedores(filtro: FiltrarRelatorioDesempenhoDto, usuario: UsuarioRelatorio) {
+
+        if (filtro.dataInicio && filtro.dataFim && filtro.dataInicio > filtro.dataFim) {
+            throw new BadRequestException('A data inicial não pode ser posterior à data final');
+        }
+
+        const query = this.usuarioRepository
+            .createQueryBuilder('usuario')
+            .leftJoin(Venda, 'venda', 'venda.id_usuario = usuario.id_usuario AND venda.status = :status',
+            { status: 'concluida' })
+            .where('usuario.perfil = :perfil', { perfil: 'vendedor' });
+            
+        if (usuario.perfil === 'vendedor') {
+            query.andWhere('usuario.id_usuario = :id_usuario', {
+                id_usuario: usuario.id,
+            });
+        } else if (filtro.id_usuario) {
+            query.andWhere('usuario.id_usuario = :id_usuario', {
+                id_usuario: filtro.id_usuario,
+            });
+        }
+
+        if (filtro.dataInicio) {
+            query.andWhere('venda.data_venda >= :dataInicio', {
+                dataInicio: filtro.dataInicio,
+            });
+        }
+
+        if (filtro.dataFim) {
+            query.andWhere('venda.data_venda < (:dataFim::date + INTERVAL \'1 day\')',
+                { dataFim: filtro.dataFim },
+            );
+        }
+        const relatorio = await query
+            .select('usuario.id_usuario', 'id_usuario')
+            .addSelect('usuario.nome', 'nome_usuario')
+            .addSelect('COUNT(venda.id_venda)', 'quantidade_vendas')
+            .addSelect('COALESCE(SUM(venda.valor_final), 0)', 'faturamento_total')
+            .groupBy('usuario.id_usuario')
+            .addGroupBy('usuario.nome')
+            .orderBy('quantidade_vendas', 'DESC')
+            .getRawMany();
+
+        return relatorio;
     }
 }
