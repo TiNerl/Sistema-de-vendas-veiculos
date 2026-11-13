@@ -121,6 +121,7 @@ export class RelatoriosService {
             .addSelect('usuario.nome', 'nome_usuario')
             .addSelect('COUNT(venda.id_venda)', 'quantidade_vendas')
             .addSelect('COALESCE(SUM(venda.valor_final), 0)', 'faturamento_total')
+            .addSelect('COALESCE(SUM(venda.valor_comissao), 0)', 'comissao_total')
             .groupBy('usuario.id_usuario')
             .addGroupBy('usuario.nome')
             .orderBy('quantidade_vendas', 'DESC')
