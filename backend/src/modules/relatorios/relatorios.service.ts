@@ -7,7 +7,6 @@ import { Veiculo } from '../veiculos/veiculo.entity';
 import { StatusVeiculo } from '../veiculos/veiculo-status.enum';
 import { Usuario } from '../usuarios/usuario.entity';
 import { FiltrarRelatorioDesempenhoDto } from './dto/filtrar-relatorio-desempenho.dto';
-import { stringify } from 'csv-stringify/sync';
 
 type UsuarioRelatorio = {
     id: number,
@@ -129,24 +128,5 @@ export class RelatoriosService {
             .getRawMany();
 
         return relatorio;
-    }
-
-    async exportarRelatorioDesempenhoVendedoresCsv(
-        filtro: FiltrarRelatorioDesempenhoDto,
-        usuario: UsuarioRelatorio,
-    ): Promise<string> {
-        const relatorio = await this.gerarRelatorioDesempenhoVendedores(filtro, usuario);
-
-        return stringify(relatorio, {
-            bom: true,
-            header: true,
-            columns: [
-                { key: 'id_usuario', header: 'ID do vendedor' },
-                { key: 'nome_usuario', header: 'Nome do vendedor' },
-                { key: 'quantidade_vendas', header: 'Quantidade de vendas' },
-                { key: 'faturamento_total', header: 'Faturamento total' },
-                { key: 'comissao_total', header: 'Comissão total' },
-            ],
-        });
     }
 }
