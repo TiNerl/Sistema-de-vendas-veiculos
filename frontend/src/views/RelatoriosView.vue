@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { isAxiosError } from 'axios'
 import {
   obterRelatorioDesempenho,
@@ -15,20 +15,55 @@ import type {
 } from '@/services/relatorios.service'
 import { useAuthStore } from '@/stores/auth'
 
+type TipoRelatorio = 'faturamento' | 'estoque' | 'desempenho'
+type FormatoExportacao = 'pdf' | 'csv'
+
 const auth = useAuthStore()
 const faturamento = ref<RelatorioFaturamentoMensal[]>([])
 const estoque = ref<RelatorioEstoque[]>([])
 const desempenho = ref<RelatorioDesempenhoVendedor[]>([])
+const relatorioSelecionado = ref<TipoRelatorio>('faturamento')
 const dataInicio = ref('')
 const dataFim = ref('')
+const filtrosExibidos = ref<FiltrosRelatorio>({})
 const erroDatas = ref('')
 const erroFaturamento = ref('')
 const erroEstoque = ref('')
 const erroDesempenho = ref('')
+const erroExportacao = ref('')
+const exportando = ref<FormatoExportacao | null>(null)
 const carregandoFaturamento = ref(false)
 const carregandoEstoque = ref(false)
 const carregandoDesempenho = ref(false)
 const carregandoPeriodo = computed(() => carregandoFaturamento.value || carregandoDesempenho.value)
+const carregandoSelecionado = computed(() => {
+  if (relatorioSelecionado.value === 'faturamento') return carregandoFaturamento.value
+  if (relatorioSelecionado.value === 'estoque') return carregandoEstoque.value
+  return carregandoDesempenho.value
+})
+const erroSelecionado = computed(() => {
+  if (relatorioSelecionado.value === 'faturamento') return erroFaturamento.value
+  if (relatorioSelecionado.value === 'estoque') return erroEstoque.value
+  return erroDesempenho.value
+})
+const quantidadeSelecionada = computed(() => {
+  if (relatorioSelecionado.value === 'faturamento') return faturamento.value.length
+  if (relatorioSelecionado.value === 'estoque') return estoque.value.length
+  return desempenho.value.length
+})
+const podeExportar = computed(
+  () =>
+    !carregandoSelecionado.value &&
+    !erroSelecionado.value &&
+    quantidadeSelecionada.value > 0 &&
+    exportando.value === null,
+)
+
+const titulosRelatorio: Record<TipoRelatorio, string> = {
+  faturamento: 'Faturamento',
+  estoque: 'Posição de estoque',
+  desempenho: 'Desempenho por vendedor',
+}
 
 const rotulosStatus: Record<StatusEstoque, string> = {
   disponivel: 'Disponível',
@@ -119,6 +154,111 @@ function filtrosSelecionados(): FiltrosRelatorio {
   }
 }
 
+function periodoConsultado(): string {
+  if (relatorioSelecionado.value === 'estoque') {
+    return 'Posição atual (a API não aplica filtro de período ao estoque)'
+  }
+  if (!filtrosExibidos.value.dataInicio && !filtrosExibidos.value.dataFim) {
+    return 'Todo o período disponível'
+  }
+  return `${filtrosExibidos.value.dataInicio || 'Sem data inicial'} a ${filtrosExibidos.value.dataFim || 'Sem data final'}`
+}
+
+function linhasExportacao(): { cabecalhos: string[]; linhas: string[][] } {
+  if (relatorioSelecionado.value === 'faturamento') {
+    return {
+      cabecalhos: ['Mês', 'Vendas', 'Faturamento'],
+      linhas: faturamento.value.map((linha) => [
+        mesAno(linha),
+        numero(linha.quantidade_vendas),
+        moeda(linha.faturamento_total),
+      ]),
+    }
+  }
+  if (relatorioSelecionado.value === 'estoque') {
+    return {
+      cabecalhos: ['Situação', 'Veículos', 'Valor total'],
+      linhas: estoque.value.map((linha) => [
+        rotulosStatus[linha.status] ?? linha.status,
+        numero(linha.quantidade_veiculos),
+        moeda(linha.valor_total),
+      ]),
+    }
+  }
+  return {
+    cabecalhos: ['Vendedor', 'Vendas', 'Faturamento', 'Comissão'],
+    linhas: desempenho.value.map((vendedor) => [
+      vendedor.nome_usuario,
+      numero(vendedor.quantidade_vendas),
+      moeda(vendedor.faturamento_total),
+      moeda(vendedor.comissao_total),
+    ]),
+  }
+}
+
+function escaparCsv(valor: string): string {
+  const protegido = /^[\t\r ]*[=+\-@]/.test(valor) ? `'${valor}` : valor
+  return `"${protegido.replaceAll('"', '""')}"`
+}
+
+function nomeArquivo(): string {
+  const base = relatorioSelecionado.value
+  if (base === 'estoque') return `${base}-posicao-atual`
+  const inicio = filtrosExibidos.value.dataInicio || 'inicio-aberto'
+  const fim = filtrosExibidos.value.dataFim || 'fim-aberto'
+  return `${base}-${inicio}-${fim}`
+}
+
+function selecionarRelatorio(tipo: TipoRelatorio) {
+  relatorioSelecionado.value = tipo
+  erroExportacao.value = ''
+}
+
+function exportarCsv() {
+  if (!podeExportar.value) return
+
+  exportando.value = 'csv'
+  erroExportacao.value = ''
+  try {
+    const { cabecalhos, linhas } = linhasExportacao()
+    const conteudo = [cabecalhos, ...linhas]
+      .map((linha) => linha.map(escaparCsv).join(';'))
+      .join('\r\n')
+    const arquivo = new Blob([`\uFEFF${conteudo}`], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(arquivo)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${nomeArquivo()}.csv`
+    document.body.append(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  } catch {
+    erroExportacao.value = 'Não foi possível gerar o arquivo CSV. Tente novamente.'
+  } finally {
+    exportando.value = null
+  }
+}
+
+async function exportarPdf() {
+  if (!podeExportar.value) return
+
+  exportando.value = 'pdf'
+  erroExportacao.value = ''
+  try {
+    await nextTick()
+    if (typeof window.print !== 'function') {
+      throw new Error('Impressão não disponível neste navegador.')
+    }
+    window.print()
+  } catch {
+    erroExportacao.value =
+      'Não foi possível preparar o PDF. Tente novamente ou use a impressão do navegador.'
+  } finally {
+    exportando.value = null
+  }
+}
+
 async function atualizarRelatorios() {
   erroDatas.value = ''
   if (dataInicio.value && dataFim.value && dataInicio.value > dataFim.value) {
@@ -127,6 +267,7 @@ async function atualizarRelatorios() {
   }
 
   const filtros = filtrosSelecionados()
+  filtrosExibidos.value = filtros
   await Promise.all([buscarFaturamento(filtros), buscarDesempenho(filtros)])
 }
 
@@ -143,7 +284,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <section>
+  <section class="reports-page">
     <div class="page-heading">
       <div>
         <span class="eyebrow">{{
@@ -202,14 +343,59 @@ onMounted(() => {
       </p>
     </div>
 
-    <div class="reports-grid">
-      <section class="card report-card report-card--wide" aria-labelledby="relatorio-faturamento">
+    <nav class="reports-selector" aria-label="Selecionar relatório">
+      <button
+        v-for="(titulo, tipo) in titulosRelatorio"
+        :key="tipo"
+        class="button"
+        :class="relatorioSelecionado === tipo ? 'button--gold' : 'button--secondary'"
+        type="button"
+        :aria-pressed="relatorioSelecionado === tipo"
+        @click="selecionarRelatorio(tipo)"
+      >
+        {{ titulo }}
+      </button>
+    </nav>
+
+    <section
+      class="card report-card report-print-surface"
+      :aria-labelledby="`relatorio-${relatorioSelecionado}`"
+    >
+      <header class="report-print-heading">
         <div class="report-heading">
           <div>
-            <span class="eyebrow">VENDAS CONCLUÍDAS</span>
-            <h2 id="relatorio-faturamento">Faturamento</h2>
+            <span class="eyebrow">RELATÓRIO</span>
+            <h2 :id="`relatorio-${relatorioSelecionado}`">
+              {{ titulosRelatorio[relatorioSelecionado] }}
+            </h2>
+          </div>
+          <div class="report-export-actions">
+            <button
+              class="button button--secondary"
+              type="button"
+              :disabled="!podeExportar"
+              @click="exportarPdf"
+            >
+              {{ exportando === 'pdf' ? 'Preparando PDF...' : 'Exportar PDF' }}
+            </button>
+            <button
+              class="button button--secondary"
+              type="button"
+              :disabled="!podeExportar"
+              @click="exportarCsv"
+            >
+              {{ exportando === 'csv' ? 'Gerando CSV...' : 'Exportar CSV / Excel' }}
+            </button>
           </div>
         </div>
+        <p class="report-period">Período consultado: {{ periodoConsultado() }}</p>
+      </header>
+
+      <p v-if="erroExportacao" class="alert alert--error report-export-error" role="alert">
+        {{ erroExportacao }}
+      </p>
+
+      <div v-if="relatorioSelecionado === 'faturamento'">
         <p v-if="erroFaturamento" class="alert alert--error" role="alert">
           {{ erroFaturamento }}
         </p>
@@ -242,15 +428,9 @@ onMounted(() => {
             </tbody>
           </table>
         </div>
-      </section>
+      </div>
 
-      <section class="card report-card report-card--wide" aria-labelledby="relatorio-desempenho">
-        <div class="report-heading">
-          <div>
-            <span class="eyebrow">RESULTADOS DA EQUIPE</span>
-            <h2 id="relatorio-desempenho">Desempenho por vendedor</h2>
-          </div>
-        </div>
+      <div v-else-if="relatorioSelecionado === 'desempenho'">
         <p v-if="erroDesempenho" class="alert alert--error" role="alert">
           {{ erroDesempenho }}
         </p>
@@ -282,15 +462,9 @@ onMounted(() => {
             </tbody>
           </table>
         </div>
-      </section>
+      </div>
 
-      <section class="card report-card" aria-labelledby="relatorio-estoque">
-        <div class="report-heading">
-          <div>
-            <span class="eyebrow">POSIÇÃO ATUAL</span>
-            <h2 id="relatorio-estoque">Estoque</h2>
-          </div>
-        </div>
+      <div v-else>
         <p v-if="erroEstoque" class="alert alert--error" role="alert">{{ erroEstoque }}</p>
         <p v-else-if="carregandoEstoque" class="loading-state" role="status">
           Carregando posição de estoque...
@@ -316,12 +490,19 @@ onMounted(() => {
             </tbody>
           </table>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
   </section>
 </template>
 
 <style scoped>
+.reports-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
 .reports-filter-card {
   margin-bottom: var(--space-6);
 }
@@ -355,22 +536,16 @@ onMounted(() => {
   margin: var(--space-3) 0 0;
 }
 
-.reports-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
-  gap: var(--space-5);
-}
-
 .report-card {
   min-width: 0;
-}
-
-.report-card--wide {
-  grid-column: span 2;
+  padding: clamp(18px, 3vw, 26px);
 }
 
 .report-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
   margin-bottom: var(--space-4);
 }
 
@@ -388,6 +563,23 @@ onMounted(() => {
   padding: 22px 10px;
 }
 
+.report-period {
+  margin: -8px 0 var(--space-5);
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.report-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.report-export-error {
+  margin-bottom: var(--space-4);
+}
+
 @media (max-width: 900px) {
   .reports-filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -399,14 +591,6 @@ onMounted(() => {
 }
 
 @media (max-width: 600px) {
-  .reports-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .report-card--wide {
-    grid-column: auto;
-  }
-
   .reports-filters {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -421,6 +605,54 @@ onMounted(() => {
 
   .report-card {
     padding: 18px;
+  }
+
+  .report-heading {
+    flex-direction: column;
+  }
+
+  .report-export-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .report-export-actions .button {
+    flex: 1;
+  }
+}
+
+@media print {
+  :global(body *) {
+    visibility: hidden !important;
+  }
+
+  .report-print-surface,
+  .report-print-surface * {
+    visibility: visible !important;
+  }
+
+  .report-print-surface {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .report-export-actions,
+  .report-export-error {
+    display: none !important;
+  }
+
+  .report-period {
+    color: #333;
+  }
+
+  .data-table th,
+  .data-table td {
+    color: #111;
+    border-color: #bbb;
   }
 }
 </style>
