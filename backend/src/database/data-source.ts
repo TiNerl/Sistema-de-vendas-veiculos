@@ -12,6 +12,7 @@ export default new DataSource({
   database: process.env.DB_NAME,
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
+  ssl: { rejectUnauthorized: false }, // Adiciona compatibilidade com o ssl
   entities: [Usuario, Cliente, Veiculo, Venda],
   migrations: ['src/database/migrations/*{.ts,.js}'],
   synchronize: false,
