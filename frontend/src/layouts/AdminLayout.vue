@@ -91,6 +91,17 @@ async function sair() {
               </svg>
               <span>Aprovação de descontos</span>
             </RouterLink>
+            <RouterLink
+              class="sidebar-link"
+              exact-active-class="sidebar-link--current"
+              to="/admin/relatorios"
+              @click="menuAberto = false"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 19V5m0 14h16M8 15v-4m4 4V7m4 8v-6" />
+              </svg>
+              <span>Relatórios</span>
+            </RouterLink>
           </div>
 
           <span class="nav-label">Gestão de estoque</span>

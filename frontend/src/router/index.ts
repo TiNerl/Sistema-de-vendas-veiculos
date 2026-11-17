@@ -15,6 +15,7 @@ import CadastrarVeiculoView from '@/views/CadastrarVeiculoView.vue'
 import CadastrarVendaView from '@/views/CadastrarVendaView.vue'
 import HistoricoVendasView from '@/views/HistoricoVendasView.vue'
 import SolicitacoesDescontoView from '@/views/SolicitacoesDescontoView.vue'
+import RelatoriosView from '@/views/RelatoriosView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
@@ -157,6 +158,16 @@ const router = createRouter({
             titulo: 'Aprovação de descontos',
           },
         },
+        {
+          path: 'admin/relatorios',
+          name: 'admin-relatorios',
+          component: RelatoriosView,
+          meta: {
+            requerAutenticacao: true,
+            apenasAdministrador: true,
+            titulo: 'Relatórios',
+          },
+        },
       ],
     },
     {
@@ -233,7 +244,7 @@ const router = createRouter({
         {
           path: 'relatorios',
           name: 'vendedor-relatorios',
-          component: ModuloVendedorView,
+          component: RelatoriosView,
           meta: { titulo: 'Relatórios' },
         },
       ],
