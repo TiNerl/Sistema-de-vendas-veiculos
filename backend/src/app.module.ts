@@ -34,7 +34,9 @@ import { RelatoriosModule } from './modules/relatorios/relatorios.module';
         username: config.getOrThrow<string>('DB_USER'),
         password: config.getOrThrow<string>('DB_PASSWORD'),
         autoLoadEntities: true,
-        synchronize: true,
+        synchronize: false,
+        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+        migrationsRun: true,
       }),
     }),
     UsuariosModule,
@@ -47,4 +49,4 @@ import { RelatoriosModule } from './modules/relatorios/relatorios.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
