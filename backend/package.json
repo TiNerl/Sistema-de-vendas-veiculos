@@ -26,6 +26,7 @@
     "seed:clientes": "ts-node src/database/seeds/clientes.seed.ts",
     "seed:veiculos": "ts-node src/database/seeds/veiculos.seed.ts",
     "seed:usuarios": "ts-node src/database/seeds/usuarios.seed.ts"
+    "start:seed": "npm run seed:usuarios && npm run seed:clientes && npm run seed:veiculos && node dist/main"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
