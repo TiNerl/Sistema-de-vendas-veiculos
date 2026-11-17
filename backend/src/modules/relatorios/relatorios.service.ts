@@ -9,6 +9,7 @@ import { Usuario } from '../usuarios/usuario.entity';
 import { FiltrarRelatorioDesempenhoDto } from './dto/filtrar-relatorio-desempenho.dto';
 import { stringify } from 'csv-stringify/sync';
 
+// alteração CSV
 type UsuarioRelatorio = {
     id: number,
     perfil: string,
