@@ -7,7 +7,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: [
-      'https://sistema-de-vendas-veiculos-frontend.vercel.app/', // Vercel url
+      'https://sistema-de-vendas-veiculos-frontend.vercel.app', // Vercel url
       'http://localhost:5173',           // dev local
     ],
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
