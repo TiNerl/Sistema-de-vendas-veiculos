@@ -33,9 +33,16 @@ import { RelatoriosModule } from './modules/relatorios/relatorios.module';
         database: config.getOrThrow<string>('DB_NAME'),
         username: config.getOrThrow<string>('DB_USER'),
         password: config.getOrThrow<string>('DB_PASSWORD'),
+<<<<<<< HEAD
         ssl: { rejectUnauthorized: false },
 	autoLoadEntities: true,
         synchronize: true,
+=======
+        autoLoadEntities: true,
+        synchronize: false,
+        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+        migrationsRun: true,
+>>>>>>> origin/dev
       }),
     }),
     UsuariosModule,
@@ -48,4 +55,4 @@ import { RelatoriosModule } from './modules/relatorios/relatorios.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
