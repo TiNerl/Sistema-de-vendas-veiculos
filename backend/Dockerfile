@@ -12,8 +12,10 @@ RUN npm install
 # Copia o resto do código
 COPY . .
 
+RUN npm run build
+
 # Expõe a porta padrão do NestJS
 EXPOSE 3000
 
 # Comando para iniciar em modo desenvolvimento (Hot-Reload)
-CMD ["npm", "run", "start:dev"]
+CMD ["npm", "run", "start:prod"]
