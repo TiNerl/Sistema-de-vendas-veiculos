@@ -24,12 +24,32 @@ export class RelatoriosController {
             return this.relatoriosService.gerarRelatorioFaturamento(filtro);
         }
 
+        @UseGuards(JwtAuthGuard, RolesGuard)
+        @Roles('admin', 'vendedor')
+        @Get('faturamento/csv')
+        @Header('Content-Type', 'text/csv; charset=utf-8')
+        @Header('Content-Disposition', 'attachment; filename="faturamento.csv"')
+        exportarRelatorioFaturamentoCsv(
+            @Query() filtro: FiltrarRelatorioFaturamentoDto,
+        ) {
+            return this.relatoriosService.exportarRelatorioFaturamentoCsv(filtro);
+        }
+
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin', 'vendedor')
     @Get('estoque')
     gerarRelatorioEstoque() {
         return this.relatoriosService.gerarRelatorioEstoque();
     }
+
+        @UseGuards(JwtAuthGuard, RolesGuard)
+        @Roles('admin', 'vendedor')
+        @Get('estoque/csv')
+        @Header('Content-Type', 'text/csv; charset=utf-8')
+        @Header('Content-Disposition', 'attachment; filename="estoque.csv"')
+        exportarRelatorioEstoqueCsv() {
+            return this.relatoriosService.exportarRelatorioEstoqueCsv();
+        }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin', 'vendedor')
