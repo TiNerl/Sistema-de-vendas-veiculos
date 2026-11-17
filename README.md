@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚗 AutoSaller — Sistema de Gestão de Vendas de Automóveis
+# 🚗 AutoSeller — Sistema de Gestão de Vendas de Automóveis
 
 **Um Sistema, duas disciplinas.** Documentação pensada para orientar o time do começo ao fim do semestre.
 
