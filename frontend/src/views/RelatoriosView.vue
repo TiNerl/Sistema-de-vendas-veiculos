@@ -297,10 +297,6 @@ onMounted(() => {
 
     <div class="card reports-filter-card">
       <h2>Período dos relatórios</h2>
-      <p class="reports-filter-description">
-        O período se aplica ao faturamento e ao desempenho. A posição de estoque não possui filtro
-        por período na API.
-      </p>
       <form class="reports-filters" @submit.prevent="atualizarRelatorios">
         <div class="field">
           <label for="relatorio-data-inicio">Data inicial</label>
