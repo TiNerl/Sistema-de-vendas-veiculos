@@ -33,16 +33,11 @@ import { RelatoriosModule } from './modules/relatorios/relatorios.module';
         database: config.getOrThrow<string>('DB_NAME'),
         username: config.getOrThrow<string>('DB_USER'),
         password: config.getOrThrow<string>('DB_PASSWORD'),
-<<<<<<< HEAD
         ssl: { rejectUnauthorized: false },
 	autoLoadEntities: true,
-        synchronize: true,
-=======
-        autoLoadEntities: true,
-        synchronize: false,
-        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
-        migrationsRun: true,
->>>>>>> origin/dev
+        synchronize: true, //o valor da branch dev está como false, não sei por que.
+        migrations: [__dirname + '/database/migrations/*{.ts,.js}'], // Vou manter 
+        migrationsRun: true, // manter também
       }),
     }),
     UsuariosModule,

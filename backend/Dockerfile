@@ -17,5 +17,5 @@ RUN npm run build
 # Expõe a porta padrão do NestJS
 EXPOSE 3000
 
-# Comando para iniciar em modo desenvolvimento (Hot-Reload)
+# Comando para iniciar em modo produção
 CMD ["npm", "run", "start:prod"]

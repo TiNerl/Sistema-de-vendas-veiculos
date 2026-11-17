@@ -13,9 +13,10 @@ services:
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
     depends_on:
       - postgres
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
+    # Removido os volumes para usar apenas os gerados pela imagem.
+    #volumes:
+      #- ./backend:/app
+      #- /app/node_modules
 
   # Banco de Dados (Postgresql)
   postgres:
