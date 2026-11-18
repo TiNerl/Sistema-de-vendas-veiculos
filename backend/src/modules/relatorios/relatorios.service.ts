@@ -59,6 +59,23 @@ export class RelatoriosService {
         return relatorio;
     }
 
+    async exportarRelatorioFaturamentoCsv(
+        filtro: FiltrarRelatorioFaturamentoDto,
+    ): Promise<string> {
+        const relatorio = await this.gerarRelatorioFaturamento(filtro);
+
+        return stringify(relatorio, {
+            bom: true,
+            header: true,
+            columns: [
+                { key: 'ano', header: 'Ano' },
+                { key: 'mes', header: 'Mês' },
+                { key: 'quantidade_vendas', header: 'Quantidade de vendas' },
+                { key: 'faturamento_total', header: 'Faturamento total' },
+            ],
+        });
+    }
+
     async gerarRelatorioEstoque() {
         const totais = await this.veiculoRepository
             .createQueryBuilder('veiculo')
@@ -82,6 +99,20 @@ export class RelatoriosService {
                 quantidade_veiculos: Number(total?.quantidade_veiculos ?? 0),
                 valor_total: Number(total?.valor_total ?? 0),
             };
+        });
+    }
+
+    async exportarRelatorioEstoqueCsv(): Promise<string> {
+        const relatorio = await this.gerarRelatorioEstoque();
+
+        return stringify(relatorio, {
+            bom: true,
+            header: true,
+            columns: [
+                { key: 'status', header: 'Status' },
+                { key: 'quantidade_veiculos', header: 'Quantidade de veículos' },
+                { key: 'valor_total', header: 'Valor total' },
+            ],
         });
     }
 
