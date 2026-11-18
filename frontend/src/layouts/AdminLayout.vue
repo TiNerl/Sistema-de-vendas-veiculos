@@ -71,6 +71,17 @@ async function sair() {
             <RouterLink
               class="sidebar-link"
               exact-active-class="sidebar-link--current"
+              to="/admin/vendas/cadastrar"
+              @click="menuAberto = false"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Registrar venda</span>
+            </RouterLink>
+            <RouterLink
+              class="sidebar-link"
+              exact-active-class="sidebar-link--current"
               to="/admin/vendas"
               @click="menuAberto = false"
             >

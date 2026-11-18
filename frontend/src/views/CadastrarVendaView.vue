@@ -7,20 +7,25 @@ import { listarVeiculos } from '@/services/veiculos.service'
 import type { Veiculo } from '@/types/veiculo'
 import { cadastrarVenda } from '@/services/vendas.service'
 import type { FormaPagamento } from '@/services/vendas.service'
+import { listarUsuarios } from '@/services/usuarios.service'
+import type { Usuario } from '@/services/usuarios.service'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 
 const clientes = ref<Cliente[]>([])
 const veiculos = ref<Veiculo[]>([])
+const vendedores = ref<Usuario[]>([])
 const idCliente = ref('')
 const idVeiculo = ref('')
+const idUsuarioResponsavel = ref('')
 const formaPagamento = ref<FormaPagamento>('a_vista')
 const percentualDesconto = ref(0)
 const carregandoDados = ref(false)
 const salvando = ref(false)
 const erro = ref('')
 const sucesso = ref('')
+const eAdmin = computed(() => auth.usuario?.perfil === 'admin')
 
 const veiculosDisponiveis = computed(() =>
   veiculos.value.filter((veiculo) => veiculo.status === 'disponivel'),
@@ -53,9 +58,16 @@ async function carregarDados() {
   erro.value = ''
 
   try {
-    const [listaClientes, listaVeiculos] = await Promise.all([listarClientes(), listarVeiculos()])
+    const [listaClientes, listaVeiculos, listaUsuarios] = await Promise.all([
+      listarClientes(),
+      listarVeiculos(),
+      eAdmin.value ? listarUsuarios() : Promise.resolve([]),
+    ])
     clientes.value = listaClientes.filter((cliente) => cliente.ativo)
     veiculos.value = listaVeiculos
+    vendedores.value = listaUsuarios.filter(
+      (usuario) => usuario.perfil === 'vendedor' && usuario.ativo,
+    )
   } catch (error) {
     erro.value = mensagemErro(error)
   } finally {
@@ -74,6 +86,11 @@ async function registrarVenda() {
     return
   }
 
+  if (eAdmin.value && !idUsuarioResponsavel.value) {
+    erro.value = 'Selecione um vendedor responsável.'
+    return
+  }
+
   if (
     !Number.isFinite(percentualDesconto.value) ||
     percentualDesconto.value < 0 ||
@@ -88,6 +105,7 @@ async function registrarVenda() {
     const venda = await cadastrarVenda({
       id_cliente: Number(idCliente.value),
       id_veiculo: Number(idVeiculo.value),
+      ...(eAdmin.value ? { id_usuario_responsavel: Number(idUsuarioResponsavel.value) } : {}),
       forma_pagamento: formaPagamento.value,
       percentual_desconto: Number(percentualDesconto.value),
     })
@@ -98,6 +116,7 @@ async function registrarVenda() {
         : `Venda #${venda.id_venda} registrada com sucesso. Valor final: ${moeda(venda.valor_final)}.`
     idCliente.value = ''
     idVeiculo.value = ''
+    idUsuarioResponsavel.value = ''
     formaPagamento.value = 'a_vista'
     percentualDesconto.value = 0
     await carregarDados()
@@ -115,7 +134,7 @@ onMounted(carregarDados)
   <section>
     <div class="page-heading">
       <div>
-        <span class="eyebrow">ÁREA DO VENDEDOR</span>
+        <span class="eyebrow">{{ eAdmin ? 'MÓDULO DE GESTÃO' : 'ÁREA DO VENDEDOR' }}</span>
         <h1>Registrar venda</h1>
         <p>Selecione o cliente e um veículo disponível para registrar a venda.</p>
       </div>
@@ -129,16 +148,25 @@ onMounted(carregarDados)
       <template v-else>
         <div class="form-section-heading">
           <h2>Dados da venda</h2>
-          <p>O vendedor responsável é identificado pela sessão autenticada.</p>
+          <p v-if="eAdmin">Selecione o vendedor responsável por esta venda.</p>
+          <p v-else>O vendedor responsável é definido automaticamente pela sessão autenticada.</p>
         </div>
 
-        <div class="field">
+        <div v-if="eAdmin" class="field">
           <label for="vendedor-responsavel">Vendedor responsável</label>
-          <input
-            id="vendedor-responsavel"
-            :value="auth.usuario?.nome ?? auth.usuario?.cpf ?? 'Usuário autenticado'"
-            readonly
-          />
+          <select id="vendedor-responsavel" v-model="idUsuarioResponsavel" required>
+            <option disabled value="">Selecione um vendedor ativo</option>
+            <option
+              v-for="vendedor in vendedores"
+              :key="vendedor.id_usuario"
+              :value="String(vendedor.id_usuario)"
+            >
+              {{ vendedor.nome }}
+            </option>
+          </select>
+          <p v-if="vendedores.length === 0" class="field-help">
+            Não há vendedores ativos disponíveis para atribuir esta venda.
+          </p>
         </div>
 
         <div class="field">
@@ -188,8 +216,8 @@ onMounted(carregarDados)
         </section>
 
         <div class="form-actions">
-          <RouterLink class="button button--secondary" to="/vendedor">Cancelar</RouterLink>
-          <button class="button button--primary" type="submit" :disabled="salvando || clientes.length === 0 || veiculosDisponiveis.length === 0">
+          <RouterLink class="button button--secondary" :to="eAdmin ? '/admin/vendas' : '/vendedor'">Cancelar</RouterLink>
+          <button class="button button--primary" type="submit" :disabled="salvando || clientes.length === 0 || veiculosDisponiveis.length === 0 || (eAdmin && vendedores.length === 0)">
             {{ salvando ? 'Registrando venda...' : 'Registrar venda' }}
           </button>
         </div>

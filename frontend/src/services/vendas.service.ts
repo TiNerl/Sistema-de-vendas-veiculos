@@ -11,6 +11,7 @@ export interface FiltrosVenda {
 export interface NovaVenda {
   id_cliente: number
   id_veiculo: number
+  id_usuario_responsavel?: number
   forma_pagamento: FormaPagamento
   percentual_desconto?: number
 }
@@ -29,6 +30,7 @@ export interface VendaRegistrada {
   cliente?: { id_cliente: number; nome: string; cpf?: string }
   veiculo?: { id_veiculo: number; marca: string; modelo: string; versao: string; placa: string }
   usuario?: { id_usuario: number; nome: string }
+  registrado_por?: { id_usuario: number; nome: string } | null
 }
 
 export async function cadastrarVenda(dados: NovaVenda): Promise<VendaRegistrada> {

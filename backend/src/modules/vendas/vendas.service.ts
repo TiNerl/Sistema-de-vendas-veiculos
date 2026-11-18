@@ -9,6 +9,7 @@ import { CadastrarVendaDto } from './dto/cadastrar-venda.dto';
 import { FiltrarVendasDto } from './dto/filtrar-vendas.dto';
 import { StatusVeiculo } from '../veiculos/veiculo-status.enum';
 import type { StatusVenda } from './venda.entity';
+import type { Perfil } from '../usuarios/usuario.entity';
 
 @Injectable()
 export class VendasService {
@@ -19,7 +20,7 @@ export class VendasService {
 
     private readonly PERCENTUAL_COMISSAO = 3;
 
-    async cadastrarVenda(dto: CadastrarVendaDto, id_usuario: number) {
+    async cadastrarVenda(dto: CadastrarVendaDto, usuarioAutenticado: { id: number; perfil: Perfil }) {
         return this.dataSource.transaction(async (manager) => {
             const cliente = await manager.findOneBy(Cliente, {
                 id_cliente: dto.id_cliente,
@@ -29,12 +30,31 @@ export class VendasService {
                 id_veiculo: dto.id_veiculo,
             });
 
-            const usuario = await manager.findOneBy(Usuario, {
-                id_usuario: id_usuario,
+            const registrador = await manager.findOneBy(Usuario, {
+                id_usuario: usuarioAutenticado.id,
             });
 
-            if (!usuario) {
+            if (!registrador) {
                 throw new NotFoundException('Usuário não encontrado');
+            }
+
+            let vendedorResponsavel: Usuario;
+            if (usuarioAutenticado.perfil === 'admin') {
+                if (dto.id_usuario_responsavel === undefined) {
+                    throw new BadRequestException('Selecione um vendedor responsável');
+                }
+
+                const vendedor = await manager.findOneBy(Usuario, {
+                    id_usuario: dto.id_usuario_responsavel,
+                    perfil: 'vendedor',
+                    ativo: true,
+                });
+                if (!vendedor) {
+                    throw new BadRequestException('O responsável deve ser um vendedor ativo');
+                }
+                vendedorResponsavel = vendedor;
+            } else {
+                vendedorResponsavel = registrador;
             }
 
             if (!cliente) {
@@ -55,7 +75,7 @@ export class VendasService {
 
             const percentualDesconto = dto.percentual_desconto ?? 0;
 
-            const precisaAprovacao = usuario.perfil === 'vendedor' && percentualDesconto > 10;
+            const precisaAprovacao = registrador.perfil === 'vendedor' && percentualDesconto > 10;
 
             const statusVenda: StatusVenda = precisaAprovacao ? 'pendente' : 'concluida';
             const statusVeiculo: StatusVeiculo = precisaAprovacao ? StatusVeiculo.RESERVADO : StatusVeiculo.VENDIDO;
@@ -65,7 +85,8 @@ export class VendasService {
             const valorComissao = (this.PERCENTUAL_COMISSAO / 100) * valorFinal;
 
             const venda = manager.create(Venda, {
-                usuario: usuario,
+                usuario: vendedorResponsavel,
+                registrado_por: registrador,
                 cliente: cliente,
                 veiculo: veiculo,
                 valor_veiculo: veiculo.preco,
@@ -105,6 +126,7 @@ export class VendasService {
                     cliente: true,
                     veiculo: true,
                     usuario: true,
+                    registrado_por: true,
                 },
             });
         });
@@ -124,7 +146,8 @@ export class VendasService {
         const query = this.repository.createQueryBuilder('venda')
             .leftJoinAndSelect('venda.cliente', 'cliente')
             .leftJoinAndSelect('venda.veiculo', 'veiculo')
-            .leftJoinAndSelect('venda.usuario', 'usuario');
+            .leftJoinAndSelect('venda.usuario', 'usuario')
+            .leftJoinAndSelect('venda.registrado_por', 'registrado_por');
 
         if (usuario?.perfil === 'vendedor') {
             query.andWhere('usuario.id_usuario = :usuarioId', {
@@ -164,6 +187,7 @@ export class VendasService {
                 cliente: true,
                 veiculo: true,
                 usuario: true,
+                registrado_por: true,
             },
         });
 
@@ -185,6 +209,7 @@ export class VendasService {
                     cliente: true,
                     veiculo: true,
                     usuario: true,
+                    registrado_por: true,
                 },
             });
 
@@ -232,6 +257,7 @@ export class VendasService {
                     cliente: true,
                     veiculo: true,
                     usuario: true,
+                    registrado_por: true,
                 },
             });
         });
@@ -248,6 +274,7 @@ export class VendasService {
                     cliente: true,
                     veiculo: true,
                     usuario: true,
+                    registrado_por: true,
                 },
             });
 
@@ -295,6 +322,7 @@ export class VendasService {
                     cliente: true,
                     veiculo: true,
                     usuario: true,
+                    registrado_por: true,
                 },
             });
         });

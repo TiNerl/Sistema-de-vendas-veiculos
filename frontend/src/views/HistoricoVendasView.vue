@@ -139,6 +139,13 @@ watch(
         <h1>Histórico de Vendas</h1>
         <p>Consulte o histórico de vendas realizadas e aplique os filtros necessários.</p>
       </div>
+      <RouterLink
+        v-if="eAdmin"
+        class="button button--primary"
+        to="/admin/vendas/cadastrar"
+      >
+        Registrar venda
+      </RouterLink>
     </div>
 
     <p v-if="erro" class="alert alert--error notice" role="alert">{{ erro }}</p>
@@ -209,7 +216,8 @@ watch(
               <th>Data</th>
               <th>Cliente</th>
               <th>Veículo</th>
-              <th v-if="eAdmin">Vendedor</th>
+              <th v-if="eAdmin">Vendedor responsável</th>
+              <th v-if="eAdmin">Registrado por</th>
               <th>Valor do veículo</th>
               <th>Desconto</th>
               <th>Comissão (%)</th>
@@ -231,6 +239,7 @@ watch(
                 <template v-else>N/A</template>
               </td>
               <td v-if="eAdmin">{{ venda.usuario?.nome ?? 'N/A' }}</td>
+              <td v-if="eAdmin">{{ venda.registrado_por?.nome ?? 'Não informado' }}</td>
               <td>{{ moeda(venda.valor_veiculo) }}</td>
               <td>{{ moeda(venda.valor_desconto ?? 0) }}</td>
               <td>{{ formatarPercentual(venda.percentual_comissao) }}</td>

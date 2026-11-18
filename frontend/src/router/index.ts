@@ -148,6 +148,16 @@ const router = createRouter({
           },
         },
         {
+          path: 'admin/vendas/cadastrar',
+          name: 'admin-cadastrar-venda',
+          component: CadastrarVendaView,
+          meta: {
+            requerAutenticacao: true,
+            apenasAdministrador: true,
+            titulo: 'Registrar venda',
+          },
+        },
+        {
           path: 'admin/descontos',
           name: 'admin-solicitacoes-desconto',
           component: SolicitacoesDescontoView,

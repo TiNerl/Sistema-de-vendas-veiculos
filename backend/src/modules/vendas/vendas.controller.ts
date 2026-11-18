@@ -19,7 +19,7 @@ export class VendasController {
     @Roles('admin', 'vendedor')
     @Post()
     cadastrar(@Body() dto: CadastrarVendaDto, @Req() request: RequisicaoAutenticada) {
-        return this.vendasService.cadastrarVenda(dto, request.user.id);
+        return this.vendasService.cadastrarVenda(dto, request.user);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
