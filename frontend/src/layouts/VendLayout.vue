@@ -8,7 +8,7 @@ const router = useRouter()
 const auth = useAuthStore()
 const menuAberto = ref(false)
 
-const tituloPagina = computed(() => route.meta.titulo ?? 'AutoSaller')
+const tituloPagina = computed(() => route.meta.titulo ?? 'AutoSeller')
 const identificadorUsuario = computed(
   () => auth.usuario?.nome ?? auth.usuario?.cpf ?? 'Usuário autenticado',
 )
@@ -40,11 +40,6 @@ const itensNavegacao = [
     icon: 'M12 3v18m6-14H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H6',
   },
   {
-    label: 'Test drives',
-    to: '/vendedor/test-drives',
-    icon: 'M12 8v4l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
-  },
-  {
     label: 'Relatórios',
     to: '/vendedor/relatorios',
     icon: 'M7 3h10l4 4v14H3V3h4Zm5 6v8m-4-4h8',
@@ -72,7 +67,7 @@ async function sair() {
       <RouterLink
         class="sidebar-brand"
         to="/vendedor"
-        aria-label="AutoSaller, ir para início"
+        aria-label="AutoSeller, ir para início"
         @click="menuAberto = false"
       >
         <span class="sidebar-brand-mark" aria-hidden="true">
@@ -81,7 +76,7 @@ async function sair() {
             <path d="M13 27h22m-19-15 8-5 8 5" />
           </svg>
         </span>
-        <span>AutoSaller</span>
+        <span>AutoSeller</span>
       </RouterLink>
 
       <nav aria-label="Navegação principal">
@@ -133,7 +128,7 @@ async function sair() {
           </button>
           <div>
             <h1 class="topbar-title">{{ tituloPagina }}</h1>
-            <span class="topbar-context">AutoSaller / Área do vendedor</span>
+            <span class="topbar-context">AutoSeller / Área do vendedor</span>
           </div>
         </div>
 

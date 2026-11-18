@@ -9,7 +9,7 @@ const auth = useAuthStore()
 const menuAberto = ref(false)
 
 const administrador = computed(() => auth.usuario?.perfil === 'admin')
-const tituloPagina = computed(() => route.meta.titulo ?? 'AutoSaller')
+const tituloPagina = computed(() => route.meta.titulo ?? 'AutoSeller')
 const identificadorUsuario = computed(
   () => auth.usuario?.nome ?? auth.usuario?.cpf ?? 'Usuário autenticado',
 )
@@ -38,7 +38,7 @@ async function sair() {
       <RouterLink
         class="sidebar-brand"
         to="/dashboard"
-        aria-label="AutoSaller, ir para início"
+        aria-label="AutoSeller, ir para início"
         @click="menuAberto = false"
       >
         <span class="sidebar-brand-mark" aria-hidden="true">
@@ -47,7 +47,7 @@ async function sair() {
             <path d="M13 27h22m-19-15 8-5 8 5" />
           </svg>
         </span>
-        <span>AutoSaller</span>
+        <span>AutoSeller</span>
       </RouterLink>
 
       <nav aria-label="Navegação principal">
@@ -190,7 +190,7 @@ async function sair() {
           </button>
           <div>
             <h1 class="topbar-title">{{ tituloPagina }}</h1>
-            <span class="topbar-context">AutoSaller / {{ tituloPagina }}</span>
+            <span class="topbar-context">AutoSeller / {{ tituloPagina }}</span>
           </div>
         </div>
 

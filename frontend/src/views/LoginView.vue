@@ -63,7 +63,7 @@ async function entrar() {
 
 <template>
   <main class="login-page">
-    <section class="login-brand" aria-label="AutoSaller">
+    <section class="login-brand" aria-label="AutoSeller">
       <div class="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 48 48" fill="none">
           <path d="M8 31.5 12.4 19a4 4 0 0 1 3.8-2.7h15.6a4 4 0 0 1 3.8 2.7L40 31.5v7h-4v-4H12v4H8v-7Z" />
@@ -71,7 +71,7 @@ async function entrar() {
           <path d="m17 12 7-5 7 5" />
         </svg>
       </div>
-      <a class="login-wordmark" href="/" aria-label="AutoSaller — início">AutoSaller</a>
+      <a class="login-wordmark" href="/" aria-label="AutoSeller — início">AutoSeller</a>
       <p>Gestão inteligente para sua concessionária</p>
       <div class="brand-rule" aria-hidden="true"></div>
       <span class="brand-caption">Gestão que acompanha o seu negócio.</span>

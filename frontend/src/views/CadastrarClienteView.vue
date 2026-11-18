@@ -210,7 +210,7 @@ watch(
           {{
             edicao
               ? 'Atualize os dados cadastrais do cliente.'
-              : 'Preencha os dados para incluir um cliente no AutoSaller.'
+              : 'Preencha os dados para incluir um cliente no AutoSeller.'
           }}
         </p>
       </div>

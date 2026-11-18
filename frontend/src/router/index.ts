@@ -7,7 +7,6 @@ import CadastrarUsuarioView from '@/views/CadastrarUsuarioView.vue'
 import InativarUsuarioView from '@/views/InativarUsuarioView.vue'
 import VendLayout from '@/layouts/VendLayout.vue'
 import VendedorDashboardView from '@/views/VendedorDashboardView.vue'
-import ModuloVendedorView from '@/views/ModuloVendedorView.vue'
 import VeiculosVendedorView from '@/views/VeiculosVendedorView.vue'
 import ClientesView from '@/views/ClientesView.vue'
 import CadastrarClienteView from '@/views/CadastrarClienteView.vue'
@@ -234,12 +233,6 @@ const router = createRouter({
           name: 'vendedor-solicitacoes-desconto',
           component: SolicitacoesDescontoView,
           meta: { titulo: 'Minhas solicitações' },
-        },
-        {
-          path: 'test-drives',
-          name: 'vendedor-test-drives',
-          component: ModuloVendedorView,
-          meta: { titulo: 'Test drives' },
         },
         {
           path: 'relatorios',

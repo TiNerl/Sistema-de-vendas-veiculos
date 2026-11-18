@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 // https://playwright.dev/docs/intro
 test('visits the app root url', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('link', { name: 'AutoSaller — início' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'AutoSeller — início' })).toBeVisible()
   await expect(page.getByLabel('CPF')).toBeVisible()
   await expect(page.locator('#login-senha')).toBeVisible()
 
