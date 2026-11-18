@@ -804,7 +804,7 @@ a {
 
 .dashboard-links {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin-top: 22px;
 }
@@ -818,6 +818,55 @@ a {
   box-shadow: var(--shadow-card);
   text-decoration: none;
   transition: transform 160ms ease, border-color 160ms ease;
+}
+
+.dashboard-shortcut {
+  display: flex;
+  min-height: 170px;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashboard-shortcut-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-shortcut .dashboard-shortcut-heading strong {
+  margin: 0;
+}
+
+.dashboard-shortcut-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  border-radius: 11px;
+  color: #9b7121 !important;
+  background: #fbf5e8;
+}
+
+.dashboard-shortcut-icon svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.dashboard-shortcut-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 4px;
+  color: #9b7121 !important;
+  font-weight: 700;
 }
 
 .dashboard-link:hover {
@@ -837,32 +886,15 @@ a {
   line-height: 1.5;
 }
 
+.dashboard-shortcut .dashboard-shortcut-action span {
+  font-size: 1.1rem;
+}
+
 .seller-shortcuts {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-top: 22px;
-}
-
-.seller-shortcut {
-  display: flex;
-  min-height: 150px;
-  flex-direction: column;
-}
-
-.seller-shortcut-action {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: auto;
-  padding-top: 18px;
-  color: #9b7121 !important;
-  font-weight: 700;
-}
-
-.seller-shortcut-action span {
-  font-size: 1.1rem;
 }
 
 .seller-guidance {
@@ -1045,6 +1077,18 @@ a {
   }
 }
 
+@media (max-width: 1300px) {
+  .admin-shortcuts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1000px) {
+  .seller-shortcuts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 900px) {
   .sidebar {
     width: 240px;
@@ -1071,6 +1115,7 @@ a {
   .filters .field:last-child {
     grid-column: 1 / -1;
   }
+
 }
 
 @media (max-width: 700px) {
