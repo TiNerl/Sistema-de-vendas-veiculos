@@ -18,12 +18,6 @@ const atalhos = [
     destino: '/vendedor/vendas',
     acao: 'Acessar vendas',
   },
-  {
-    titulo: 'Test drives',
-    descricao: 'Acesse a área de gerenciamento de test drives.',
-    destino: '/vendedor/test-drives',
-    acao: 'Gerenciar test drives',
-  },
 ]
 </script>
 
@@ -31,10 +25,10 @@ const atalhos = [
   <section>
     <div class="dashboard-welcome">
       <span class="eyebrow">ÁREA DO VENDEDOR</span>
-      <h1>Bem-vindo ao AutoSaller</h1>
+      <h1>Bem-vindo ao AutoSeller</h1>
       <p>
         Organize seu atendimento e encontre rapidamente as ferramentas para acompanhar clientes,
-        veículos, vendas e test drives.
+        veículos e vendas.
       </p>
     </div>
 

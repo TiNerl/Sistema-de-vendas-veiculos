@@ -12,7 +12,7 @@ const perfilNome = computed(() =>
   <section>
     <div class="dashboard-welcome">
       <span class="eyebrow">PAINEL DE CONTROLE</span>
-      <h1>Bem-vindo ao AutoSaller</h1>
+      <h1>Bem-vindo ao AutoSeller</h1>
       <p>
         Sua concessionária, organizada em um só lugar. Acesse as ferramentas disponíveis para seu
         perfil de {{ perfilNome }}.

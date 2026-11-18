@@ -94,7 +94,7 @@ async function cadastrar() {
       <div>
         <span class="eyebrow">ADMINISTRAÇÃO</span>
         <h1>Cadastrar usuário</h1>
-        <p>Adicione uma pessoa à equipe do AutoSaller.</p>
+        <p>Adicione uma pessoa à equipe do AutoSeller.</p>
       </div>
     </div>
 

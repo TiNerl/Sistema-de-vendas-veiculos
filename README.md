@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚗 AutoSaller — Sistema de Gestão de Vendas de Automóveis
+# 🚗 AutoSeller — Sistema de Gestão de Vendas de Automóveis
 
 **Um Sistema, duas disciplinas.** Documentação pensada para orientar o time do começo ao fim do semestre.
 
@@ -14,7 +14,7 @@
 
 ## 🧭 Índice
 
-1. [Por que AutoSaller?](#-Por-que-AutoSaller)
+1. [Por que AutoSeller?](#-Por-que-AutoSeller)
 2. [O sistema em uma frase](#-o-sistema-em-uma-frase)
 3. [Escopo: o que entra e o que não entra](#-escopo-o-que-entra-e-o-que-não-entra)
 4. [Requisitos por prioridade](#-requisitos-por-prioridade)
@@ -33,16 +33,16 @@
 
 ---
 
-## 📌 Por que AutoSaller?
+## 📌 Por que AutoSeller?
 
-O **AutoSaller** foi criado para atender as necessidades do mercado de automóveis local de Currais Novos. O "Auto" refere-se aos automóveis e "Seller" refere-se ao vendedor ou lojista, o objetivo principal é satisfazer as necessidades de um mercado em crescente desenvolvimento e expansão ao longo prazo.
+O **AutoSeller** foi criado para atender as necessidades do mercado de automóveis local de Currais Novos. O "Auto" refere-se aos automóveis e "Seller" refere-se ao vendedor ou lojista, o objetivo principal é satisfazer as necessidades de um mercado em crescente desenvolvimento e expansão ao longo prazo.
 
 
 Sendo assim, a fim de satisfazer os requisitos das disciplinas, durante o desenvolvimento foi visado um sistema completo, ponta-a-ponta, guiado por três âncoras — **Banco de Dados**, **Sistemas Corporativos** e **Processo de Desenvolvimento** — estes avaliados em 4 marcos (M1–M4) com Sistemas Corporativos sendo uma dessas âncoras com sua rubrica própria.
 
 > **PoC vs. MVP vs. Product** (contexto rápido)
 > - **PoC** — "isso é possível?" → protótipo descartável, só valida a ideia.
-> - **MVP** — "isso resolve o problema de alguém?" → é o que o AutoSaller precisa ser até o M3.
+> - **MVP** — "isso resolve o problema de alguém?" → é o que o AutoSeller precisa ser até o M3.
 > - **Product** — "isso se sustenta e escala?" → fora do escopo deste semestre.
 
 ---
@@ -114,7 +114,7 @@ flowchart LR
     C --> D["Entrega<br/>Encontros 13-15<br/>M4 - 60%"]
 ```
 
-| Bloco | Encontros | Marco | O que a banca espera | O que isso é no AutoSaller |
+| Bloco | Encontros | Marco | O que a banca espera | O que isso é no AutoSeller |
 |---|---|---|---|---|
 | 📋 Concepção | 1–4 | **M1** — Proposta do Projeto | Documento + pitch, escopo mínimo, orientador aceito, backlog, modelo de dados preliminar | **Já temos:** BRD v1.0, escopo dentro/fora, requisitos priorizados de 1 a 4, DER, casos de uso e cronograma com datas. **Falta:** orientador definido, diagrama de classes e repositório inicializado (NestJS + Vue) |
 | 🏗️ Esqueleto | 5–8 | **M2** — PoC ponta a ponta | Fluxo completo: tela → regra → banco → resposta, ao vivo | Ambiente montado e a 1ª fatia no ar **por URL**: login com 2 perfis e log de auditoria |
@@ -212,7 +212,7 @@ O diagrama está no [dbdiagram](https://dbdiagram.io/d/Diagrama-DER-AutoSeller-6
 
 ## 📊 Rubrica de Sistemas Corporativos (50 pts)
 
-| Critério | Pontos | O que no AutoSaller comprova isso |
+| Critério | Pontos | O que no AutoSeller comprova isso |
 |---|---:|---|
 | Domínio, requisitos e valor corporativo | 8 | BRD — descrição, escopo, 3 direcionadores de negócio, processo sem e com software, RFs priorizados e casos de uso |
 | Arquitetura, modularidade e decisões registradas | 10 | Camadas no NestJS (controller/service/repository), 5 módulos desacoplados (RNF010), decisões registradas em `docs/decisoes-arquiteturais/` |
@@ -320,7 +320,7 @@ Cada módulo do `backend/modules` e do `frontend/views` espelha um bloco de requ
 ### Pendências em aberto
 
 - [ ] **Orientador** do projeto (exigido no M1).
-- [ ] **Grafia do nome:** AutoSaller (este README) × AutoSeller (BRD, DER e casos de uso).
+- [x] **Grafia do nome:** AutoSeller (README, BRD, DER e casos de uso).
 - [ ] **Datas dos marcos** M1–M4 e o que os percentuais 40/60/40/60 ponderam.
 - [ ] **Plataforma de deploy** que rode NestJS + PostgreSQL no plano gratuito (o BRD cita Render, Vercel e Supabase).
 - [ ] **Identificador de login:** no DER, `USUARIO` tem CPF e senha, sem e-mail ou nome de usuário.
