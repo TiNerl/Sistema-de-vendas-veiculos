@@ -11,6 +11,7 @@ const router = useRouter()
 const formulario = reactive<NovoUsuario & { confirmarSenha: string }>({
   nome: '',
   cpf: '',
+  email: '',
   senha: '',
   confirmarSenha: '',
   perfil: 'vendedor',
@@ -49,6 +50,11 @@ function validar(): boolean {
   if (!formulario.cpf.trim()) erros.cpf = 'Informe o CPF.'
   else if (!cpfValido(formulario.cpf)) erros.cpf = 'Informe um CPF válido.'
 
+  if (!formulario.email.trim()) erros.email = 'Informe o e-mail.'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formulario.email.trim())) {
+    erros.email = 'Informe um e-mail válido.'
+  }
+
   if (!formulario.senha) erros.senha = 'Informe uma senha inicial.'
   else if (formulario.senha.length < 6) erros.senha = 'A senha deve ter pelo menos 6 caracteres.'
   else if (formulario.senha.length > 255) erros.senha = 'A senha deve ter no máximo 255 caracteres.'
@@ -71,12 +77,14 @@ async function cadastrar() {
     await cadastrarUsuario({
       nome: formulario.nome.trim(),
       cpf: formulario.cpf.replace(/\D/g, ''),
+      email: formulario.email.trim(),
       senha: formulario.senha,
       perfil: formulario.perfil,
     })
     sucesso.value = true
     formulario.nome = ''
     formulario.cpf = ''
+    formulario.email = ''
     formulario.senha = ''
     formulario.confirmarSenha = ''
     formulario.perfil = 'vendedor'
@@ -136,6 +144,21 @@ async function cadastrar() {
             aria-describedby="novo-cpf-erro"
           />
           <span v-if="erros.cpf" id="novo-cpf-erro" class="field-error">{{ erros.cpf }}</span>
+        </div>
+
+        <div class="field">
+          <label for="novo-email">E-mail</label>
+          <input
+            id="novo-email"
+            v-model="formulario.email"
+            type="email"
+            autocomplete="email"
+            maxlength="255"
+            required
+            :aria-invalid="Boolean(erros.email)"
+            aria-describedby="novo-email-erro"
+          />
+          <span v-if="erros.email" id="novo-email-erro" class="field-error">{{ erros.email }}</span>
         </div>
 
         <div class="field">

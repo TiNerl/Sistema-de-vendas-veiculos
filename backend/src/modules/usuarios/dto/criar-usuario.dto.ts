@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, MinLength, MaxLength, IsIn } from 'class-validator';
+import { IsString, IsNotEmpty, MinLength, MaxLength, IsIn, IsEmail } from 'class-validator';
 
 import type { Perfil } from '../usuario.entity';
 
@@ -13,6 +13,11 @@ export class CriarUsuarioDto {
   @MinLength(11)
   @MaxLength(11)
   cpf: string;
+
+  @IsEmail({}, { message: 'Formato de e-mail inválido' })
+  @IsNotEmpty()
+  @MaxLength(255)
+  email: string;
 
   @IsString()
   @IsNotEmpty()

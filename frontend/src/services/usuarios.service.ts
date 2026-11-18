@@ -5,6 +5,7 @@ export interface Usuario {
   id_usuario: number
   nome: string
   cpf: string
+  email?: string
   perfil: PerfilUsuario
   ativo: boolean
 }
@@ -12,6 +13,7 @@ export interface Usuario {
 export interface NovoUsuario {
   nome: string
   cpf: string
+  email: string
   senha: string
   perfil: PerfilUsuario
 }
