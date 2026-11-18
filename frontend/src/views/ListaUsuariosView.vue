@@ -58,7 +58,7 @@ onMounted(carregarUsuarios)
       <div>
         <span class="eyebrow">ADMINISTRAÇÃO</span>
         <h1>Usuários</h1>
-        <p>Gerencie os usuários cadastrados no AutoSaller</p>
+        <p>Gerencie os usuários cadastrados no AutoSeller</p>
       </div>
       <RouterLink class="button button--gold" to="/admin/usuarios/cadastrar">
         <svg viewBox="0 0 24 24" aria-hidden="true">

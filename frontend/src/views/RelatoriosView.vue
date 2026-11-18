@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { isAxiosError } from 'axios'
 import {
   obterRelatorioDesempenho,
@@ -8,11 +8,14 @@ import {
 } from '@/services/relatorios.service'
 import type {
   FiltrosRelatorio,
+  FiltrosRelatorioDesempenho,
   RelatorioDesempenhoVendedor,
   RelatorioEstoque,
   RelatorioFaturamentoMensal,
   StatusEstoque,
 } from '@/services/relatorios.service'
+import { listarUsuarios } from '@/services/usuarios.service'
+import type { Usuario } from '@/services/usuarios.service'
 import { useAuthStore } from '@/stores/auth'
 
 type TipoRelatorio = 'faturamento' | 'estoque' | 'desempenho'
@@ -22,6 +25,8 @@ const auth = useAuthStore()
 const faturamento = ref<RelatorioFaturamentoMensal[]>([])
 const estoque = ref<RelatorioEstoque[]>([])
 const desempenho = ref<RelatorioDesempenhoVendedor[]>([])
+const vendedores = ref<Usuario[]>([])
+const idVendedorSelecionado = ref<number | ''>('')
 const relatorioSelecionado = ref<TipoRelatorio>('faturamento')
 const dataInicio = ref('')
 const dataFim = ref('')
@@ -30,11 +35,22 @@ const erroDatas = ref('')
 const erroFaturamento = ref('')
 const erroEstoque = ref('')
 const erroDesempenho = ref('')
+const erroVendedores = ref('')
 const erroExportacao = ref('')
 const exportando = ref<FormatoExportacao | null>(null)
 const carregandoFaturamento = ref(false)
 const carregandoEstoque = ref(false)
 const carregandoDesempenho = ref(false)
+const carregandoVendedores = ref(false)
+let requisicaoDesempenho = 0
+const vendedorSelecionado = computed(() =>
+  vendedores.value.find((vendedor) => vendedor.id_usuario === idVendedorSelecionado.value),
+)
+const mensagemVaziaDesempenho = computed(() =>
+  vendedorSelecionado.value
+    ? `Nenhum dado de desempenho encontrado para ${vendedorSelecionado.value.nome} no período.`
+    : 'Nenhum dado de desempenho encontrado para o período.',
+)
 const carregandoPeriodo = computed(() => carregandoFaturamento.value || carregandoDesempenho.value)
 const carregandoSelecionado = computed(() => {
   if (relatorioSelecionado.value === 'faturamento') return carregandoFaturamento.value
@@ -63,6 +79,17 @@ const titulosRelatorio: Record<TipoRelatorio, string> = {
   faturamento: 'Faturamento',
   estoque: 'Posição de estoque',
   desempenho: 'Desempenho por vendedor',
+}
+
+function filtrosDesempenhoSelecionados(
+  filtros: FiltrosRelatorio = filtrosSelecionados(),
+): FiltrosRelatorioDesempenho {
+  return {
+    ...filtros,
+    ...(auth.usuario?.perfil === 'admin' && idVendedorSelecionado.value !== ''
+      ? { id_usuario: idVendedorSelecionado.value }
+      : {}),
+  }
 }
 
 const rotulosStatus: Record<StatusEstoque, string> = {
@@ -134,16 +161,36 @@ async function buscarEstoque() {
   }
 }
 
-async function buscarDesempenho(filtros: FiltrosRelatorio = {}) {
+async function buscarVendedores() {
+  carregandoVendedores.value = true
+  erroVendedores.value = ''
+  try {
+    vendedores.value = (await listarUsuarios()).filter(
+      (usuario) => usuario.perfil === 'vendedor' && usuario.ativo,
+    )
+  } catch (error) {
+    vendedores.value = []
+    erroVendedores.value = mensagemErro(error, 'vendedores')
+  } finally {
+    carregandoVendedores.value = false
+  }
+}
+
+async function buscarDesempenho(filtros: FiltrosRelatorioDesempenho = {}) {
+  const requisicaoAtual = ++requisicaoDesempenho
   carregandoDesempenho.value = true
   erroDesempenho.value = ''
+  desempenho.value = []
   try {
-    desempenho.value = await obterRelatorioDesempenho(filtros)
+    const resultado = await obterRelatorioDesempenho(filtros)
+    if (requisicaoAtual === requisicaoDesempenho) desempenho.value = resultado
   } catch (error) {
-    desempenho.value = []
-    erroDesempenho.value = mensagemErro(error, 'desempenho')
+    if (requisicaoAtual === requisicaoDesempenho) {
+      desempenho.value = []
+      erroDesempenho.value = mensagemErro(error, 'desempenho')
+    }
   } finally {
-    carregandoDesempenho.value = false
+    if (requisicaoAtual === requisicaoDesempenho) carregandoDesempenho.value = false
   }
 }
 
@@ -268,7 +315,10 @@ async function atualizarRelatorios() {
 
   const filtros = filtrosSelecionados()
   filtrosExibidos.value = filtros
-  await Promise.all([buscarFaturamento(filtros), buscarDesempenho(filtros)])
+  await Promise.all([
+    buscarFaturamento(filtros),
+    buscarDesempenho(filtrosDesempenhoSelecionados(filtros)),
+  ])
 }
 
 async function limparFiltros() {
@@ -279,7 +329,14 @@ async function limparFiltros() {
 }
 
 onMounted(() => {
-  void Promise.all([buscarFaturamento(), buscarEstoque(), buscarDesempenho()])
+  const consultas = [buscarFaturamento(), buscarEstoque(), buscarDesempenho()]
+  if (auth.usuario?.perfil === 'admin') consultas.push(buscarVendedores())
+  void Promise.all(consultas)
+})
+
+watch(idVendedorSelecionado, () => {
+  if (auth.usuario?.perfil !== 'admin') return
+  void buscarDesempenho(filtrosDesempenhoSelecionados(filtrosExibidos.value))
 })
 </script>
 
@@ -364,6 +421,16 @@ onMounted(() => {
             <h2 :id="`relatorio-${relatorioSelecionado}`">
               {{ titulosRelatorio[relatorioSelecionado] }}
             </h2>
+            <p
+              v-if="
+                auth.usuario?.perfil === 'admin' &&
+                relatorioSelecionado === 'desempenho' &&
+                vendedorSelecionado
+              "
+              class="report-filter-summary"
+            >
+              Vendedor selecionado: {{ vendedorSelecionado.nome }}
+            </p>
           </div>
           <div class="report-export-actions">
             <button
@@ -427,6 +494,27 @@ onMounted(() => {
       </div>
 
       <div v-else-if="relatorioSelecionado === 'desempenho'">
+        <div v-if="auth.usuario?.perfil === 'admin'" class="field performance-vendor-filter">
+          <label for="relatorio-vendedor">Filtrar por vendedor</label>
+          <select
+            id="relatorio-vendedor"
+            v-model.number="idVendedorSelecionado"
+            :disabled="carregandoVendedores"
+          >
+            <option value="">Todos os vendedores</option>
+            <option
+              v-for="vendedor in vendedores"
+              :key="vendedor.id_usuario"
+              :value="vendedor.id_usuario"
+            >
+              {{ vendedor.nome }}
+            </option>
+          </select>
+          <p v-if="erroVendedores" class="field-error" role="alert">{{ erroVendedores }}</p>
+          <p v-else-if="!carregandoVendedores && vendedores.length === 0" class="field-hint">
+            Não há vendedores ativos cadastrados.
+          </p>
+        </div>
         <p v-if="erroDesempenho" class="alert alert--error" role="alert">
           {{ erroDesempenho }}
         </p>
@@ -434,7 +522,7 @@ onMounted(() => {
           Carregando desempenho...
         </p>
         <p v-else-if="desempenho.length === 0" class="empty-state">
-          Nenhum dado de desempenho encontrado para o período.
+          {{ mensagemVaziaDesempenho }}
         </p>
         <div v-else class="table-wrap">
           <table class="data-table">
@@ -511,6 +599,23 @@ onMounted(() => {
 
 .reports-filter-description {
   margin: 7px 0 18px;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.performance-vendor-filter {
+  max-width: 420px;
+  margin-bottom: var(--space-4);
+}
+
+.performance-vendor-filter .field-hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.report-filter-summary {
+  margin: var(--space-2) 0 0;
   color: var(--color-muted);
   font-size: 0.875rem;
 }

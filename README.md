@@ -14,7 +14,7 @@
 
 ## 🧭 Índice
 
-1. [Por que AutoSaller?](#-Por-que-AutoSaller)
+1. [Por que AutoSeller?](#-Por-que-AutoSeller)
 2. [O sistema em uma frase](#-o-sistema-em-uma-frase)
 3. [Escopo: o que entra e o que não entra](#-escopo-o-que-entra-e-o-que-não-entra)
 4. [Requisitos por prioridade](#-requisitos-por-prioridade)
@@ -33,16 +33,16 @@
 
 ---
 
-## 📌 Por que AutoSaller?
+## 📌 Por que AutoSeller?
 
-O **AutoSaller** foi criado para atender as necessidades do mercado de automóveis local de Currais Novos. O "Auto" refere-se aos automóveis e "Seller" refere-se ao vendedor ou lojista, o objetivo principal é satisfazer as necessidades de um mercado em crescente desenvolvimento e expansão ao longo prazo.
+O **AutoSeller** foi criado para atender as necessidades do mercado de automóveis local de Currais Novos. O "Auto" refere-se aos automóveis e "Seller" refere-se ao vendedor ou lojista, o objetivo principal é satisfazer as necessidades de um mercado em crescente desenvolvimento e expansão ao longo prazo.
 
 
 Sendo assim, a fim de satisfazer os requisitos das disciplinas, durante o desenvolvimento foi visado um sistema completo, ponta-a-ponta, guiado por três âncoras — **Banco de Dados**, **Sistemas Corporativos** e **Processo de Desenvolvimento** — estes avaliados em 4 marcos (M1–M4) com Sistemas Corporativos sendo uma dessas âncoras com sua rubrica própria.
 
 > **PoC vs. MVP vs. Product** (contexto rápido)
 > - **PoC** — "isso é possível?" → protótipo descartável, só valida a ideia.
-> - **MVP** — "isso resolve o problema de alguém?" → é o que o AutoSaller precisa ser até o M3.
+> - **MVP** — "isso resolve o problema de alguém?" → é o que o AutoSeller precisa ser até o M3.
 > - **Product** — "isso se sustenta e escala?" → fora do escopo deste semestre.
 
 ---
@@ -62,6 +62,10 @@ O cadastro de veículos está disponível para administradores na interface web.
 A mesma tela de **Estoque de Veículos** é acessível a administradores (`/admin/veiculos`) e vendedores (`/vendedor/veiculos`). A consulta usa `GET /veiculos`, protegida por JWT e pelos perfis `admin` e `vendedor`; os parâmetros opcionais `marca`, `modelo`, `precoMin`, `precoMax`, `anoMin`, `anoMax`, `combustivel` e `status` são combinados na consulta ao banco. O endpoint retorna apenas os campos necessários à listagem. Os status válidos são `disponivel`, `reservado`, `vendido` e `em_manutencao`. A entidade de veículos ainda não possui campo de foto, portanto a interface não exibe uma imagem fictícia.
 
 Administradores podem alterar entre `disponivel` e `em_manutencao` pela listagem, após confirmação; vendedores apenas consultam os status. `PATCH /veiculos/:id/status` é protegido no backend e não permite alterar manualmente estados de reserva ou venda nem veículos com venda concluída. Administradores também podem excluir veículos sem registros de venda; veículos com histórico são preservados. O sistema ainda não possui cadastro ou cancelamento de reservas, portanto o estado `reservado` permanece bloqueado para alteração manual até que exista um processo próprio.
+
+### Exportação do desempenho dos vendedores
+
+`GET /relatorios/desempenho-vendedores/csv` exporta o relatório de desempenho em CSV UTF-8 e inicia o download. A rota exige JWT e aceita os perfis `admin` e `vendedor`; administradores podem consultar todos os vendedores ou filtrar por `id_usuario`, `dataInicio` e `dataFim`, enquanto vendedores recebem somente os próprios dados. Os filtros de período são compartilhados com a consulta JSON do relatório.
 
 **Documentos-base do projeto:**
 
@@ -114,7 +118,7 @@ flowchart LR
     C --> D["Entrega<br/>Encontros 13-15<br/>M4 - 60%"]
 ```
 
-| Bloco | Encontros | Marco | O que a banca espera | O que isso é no AutoSaller |
+| Bloco | Encontros | Marco | O que a banca espera | O que isso é no AutoSeller |
 |---|---|---|---|---|
 | 📋 Concepção | 1–4 | **M1** — Proposta do Projeto | Documento + pitch, escopo mínimo, orientador aceito, backlog, modelo de dados preliminar | **Já temos:** BRD v1.0, escopo dentro/fora, requisitos priorizados de 1 a 4, DER, casos de uso e cronograma com datas. **Falta:** orientador definido, diagrama de classes e repositório inicializado (NestJS + Vue) |
 | 🏗️ Esqueleto | 5–8 | **M2** — PoC ponta a ponta | Fluxo completo: tela → regra → banco → resposta, ao vivo | Ambiente montado e a 1ª fatia no ar **por URL**: login com 2 perfis e log de auditoria |
@@ -151,7 +155,7 @@ A ordem abaixo segue as janelas do Cronograma, e cada fatia tem um responsável 
 | 3 | Estoque | 25/10 – 05/11 | Cadastro, consulta, edição e exclusão protegida por histórico, status (Disponível/Reservado/Vendido/Em Manutenção), validação de placa/chassi/RENAVAM e filtros | RF-EST-01 a 07 · RF-USU-11 | Maycon Douglas |
 | 4 | Vendas — núcleo | 06/11 – 20/11 | Registrar venda (veículo + cliente + vendedor), pagamento, baixa automática de estoque **na mesma transação**, comissão, histórico de vendas | RF-VEN-01 a 04, 06 | Ingridy Luzia |
 | 5 | Vendas — desconto especial e cancelamento | 06/11 – 20/11 | Solicitação de desconto ≥ 10%, aprovação/reprovação pelo Administrador, cancelamento de venda com justificativa no log | RF-VEN-05, 07 · RF-USU-06, 12 | Ingridy Luzia · Paulo Guilherme |
-| 6 | Relatórios consolidados | 21/11 – 30/11 | Faturamento, posição de estoque, desempenho por vendedor (join de +1 tabela), consolidado do Administrador, relatório e comissões do próprio vendedor, exportação PDF/CSV *(cortável)* | RF-REL-01 a 05 · RF-USU-03, 07, 10 | José Henrique |
+| 6 | Relatórios consolidados | 21/11 – 30/11 | Faturamento, posição de estoque, desempenho por vendedor (join de +1 tabela), visão consolidada e filtro individual por vendedor ativo para o Administrador, relatório e comissões do próprio vendedor, exportação PDF/CSV *(cortável)* | RF-REL-01 a 05 · RF-USU-03, 07, 10 | José Henrique |
 
 - **Depois de Vendas:** RF-CLI-07 (histórico de compras) e RF-CLI-10 (pós-venda e garantia) dependem das vendas registradas.
 - **Fatia 6:** resolve, sozinha, a exigência de "consulta/relatório que agregue dados de mais de uma tabela" das duas disciplinas. Vale ir escrevendo as consultas sobre os dados de exemplo antes da janela de 21/11.
@@ -212,7 +216,7 @@ O diagrama está no [dbdiagram](https://dbdiagram.io/d/Diagrama-DER-AutoSeller-6
 
 ## 📊 Rubrica de Sistemas Corporativos (50 pts)
 
-| Critério | Pontos | O que no AutoSaller comprova isso |
+| Critério | Pontos | O que no AutoSeller comprova isso |
 |---|---:|---|
 | Domínio, requisitos e valor corporativo | 8 | BRD — descrição, escopo, 3 direcionadores de negócio, processo sem e com software, RFs priorizados e casos de uso |
 | Arquitetura, modularidade e decisões registradas | 10 | Camadas no NestJS (controller/service/repository), 5 módulos desacoplados (RNF010), decisões registradas em `docs/decisoes-arquiteturais/` |
@@ -320,7 +324,7 @@ Cada módulo do `backend/modules` e do `frontend/views` espelha um bloco de requ
 ### Pendências em aberto
 
 - [ ] **Orientador** do projeto (exigido no M1).
-- [ ] **Grafia do nome:** AutoSaller (este README) × AutoSeller (BRD, DER e casos de uso).
+- [x] **Grafia do nome:** AutoSeller (README, BRD, DER e casos de uso).
 - [ ] **Datas dos marcos** M1–M4 e o que os percentuais 40/60/40/60 ponderam.
 - [ ] **Plataforma de deploy** que rode NestJS + PostgreSQL no plano gratuito (o BRD cita Render, Vercel e Supabase).
 - [ ] **Identificador de login:** no DER, `USUARIO` tem CPF e senha, sem e-mail ou nome de usuário.
