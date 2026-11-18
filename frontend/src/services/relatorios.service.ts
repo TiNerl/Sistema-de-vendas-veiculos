@@ -5,6 +5,10 @@ export interface FiltrosRelatorio {
   dataFim?: string
 }
 
+export interface FiltrosRelatorioDesempenho extends FiltrosRelatorio {
+  id_usuario?: number
+}
+
 export interface RelatorioFaturamentoMensal {
   ano: string | number
   mes: string | number
@@ -96,7 +100,7 @@ export async function obterRelatorioEstoque(): Promise<RelatorioEstoque[]> {
 }
 
 export async function obterRelatorioDesempenho(
-  filtros: FiltrosRelatorio = {},
+  filtros: FiltrosRelatorioDesempenho = {},
 ): Promise<RelatorioDesempenhoVendedor[]> {
   const resposta = await api.get<unknown>('/relatorios/desempenho-vendedores', {
     params: filtros,

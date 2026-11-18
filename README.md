@@ -151,7 +151,7 @@ A ordem abaixo segue as janelas do Cronograma, e cada fatia tem um responsável 
 | 3 | Estoque | 25/10 – 05/11 | Cadastro, consulta, edição e exclusão protegida por histórico, status (Disponível/Reservado/Vendido/Em Manutenção), validação de placa/chassi/RENAVAM e filtros | RF-EST-01 a 07 · RF-USU-11 | Maycon Douglas |
 | 4 | Vendas — núcleo | 06/11 – 20/11 | Registrar venda (veículo + cliente + vendedor), pagamento, baixa automática de estoque **na mesma transação**, comissão, histórico de vendas | RF-VEN-01 a 04, 06 | Ingridy Luzia |
 | 5 | Vendas — desconto especial e cancelamento | 06/11 – 20/11 | Solicitação de desconto ≥ 10%, aprovação/reprovação pelo Administrador, cancelamento de venda com justificativa no log | RF-VEN-05, 07 · RF-USU-06, 12 | Ingridy Luzia · Paulo Guilherme |
-| 6 | Relatórios consolidados | 21/11 – 30/11 | Faturamento, posição de estoque, desempenho por vendedor (join de +1 tabela), consolidado do Administrador, relatório e comissões do próprio vendedor, exportação PDF/CSV *(cortável)* | RF-REL-01 a 05 · RF-USU-03, 07, 10 | José Henrique |
+| 6 | Relatórios consolidados | 21/11 – 30/11 | Faturamento, posição de estoque, desempenho por vendedor (join de +1 tabela), visão consolidada e filtro individual por vendedor ativo para o Administrador, relatório e comissões do próprio vendedor, exportação PDF/CSV *(cortável)* | RF-REL-01 a 05 · RF-USU-03, 07, 10 | José Henrique |
 
 - **Depois de Vendas:** RF-CLI-07 (histórico de compras) e RF-CLI-10 (pós-venda e garantia) dependem das vendas registradas.
 - **Fatia 6:** resolve, sozinha, a exigência de "consulta/relatório que agregue dados de mais de uma tabela" das duas disciplinas. Vale ir escrevendo as consultas sobre os dados de exemplo antes da janela de 21/11.
