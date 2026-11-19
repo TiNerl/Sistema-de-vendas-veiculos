@@ -14,6 +14,7 @@ describe('VendasController', () => {
   const vendedor = { id: 2, perfil: 'vendedor' as const };
 
   beforeEach(async () => {
+    vi.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       controllers: [VendasController],
       providers: [
@@ -37,6 +38,21 @@ describe('VendasController', () => {
 
     await expect(controller.buscarPorId(42, { user: vendedor })).resolves.toBe(venda);
     expect(mockVendasService.buscarPorId).toHaveBeenCalledWith(42, vendedor);
+  });
+
+  it('encaminha o perfil autenticado e o responsável informado ao registrar venda', async () => {
+    const dto = {
+      id_cliente: 10,
+      id_veiculo: 20,
+      id_usuario_responsavel: 3,
+      forma_pagamento: 'a_vista' as const,
+    };
+    const venda = { id_venda: 42 };
+    const administrador = { id: 1, perfil: 'admin' as const };
+    mockVendasService.cadastrarVenda.mockResolvedValue(venda);
+
+    await expect(controller.cadastrar(dto, { user: administrador })).resolves.toBe(venda);
+    expect(mockVendasService.cadastrarVenda).toHaveBeenCalledWith(dto, administrador);
   });
 
   it('encaminha o usuário autenticado ao consultar a lista de vendas', async () => {

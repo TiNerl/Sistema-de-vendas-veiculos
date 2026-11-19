@@ -32,6 +32,10 @@ export class Venda {
     @JoinColumn({ name: 'id_usuario'})
     usuario: Usuario;
 
+    @ManyToOne(() => Usuario, { nullable: true })
+    @JoinColumn({ name: 'id_usuario_registro' })
+    registrado_por: Usuario | null;
+
     @Column({name: 'valor_veiculo', type: 'decimal', precision: 12, scale: 2})
     valor_veiculo: string;
 

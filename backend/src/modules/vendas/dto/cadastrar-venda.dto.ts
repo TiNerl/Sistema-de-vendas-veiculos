@@ -13,6 +13,11 @@ export class CadastrarVendaDto {
     @Min(1)
     id_veiculo: number;
 
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    id_usuario_responsavel?: number;
+
     @IsNotEmpty()
     @IsString()
     @IsIn(['a_vista', 'pix', 'financiamento', 'consorcio'])

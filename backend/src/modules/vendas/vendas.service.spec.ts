@@ -63,6 +63,7 @@ describe('VendasService', () => {
         cliente: true,
         veiculo: true,
         usuario: true,
+        registrado_por: true,
       },
     });
   });
@@ -94,6 +95,7 @@ describe('VendasService', () => {
         cliente: true,
         veiculo: true,
         usuario: true,
+        registrado_por: true,
       },
     });
   });

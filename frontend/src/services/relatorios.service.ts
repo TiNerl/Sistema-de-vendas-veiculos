@@ -1,5 +1,10 @@
 import { api } from '@/services/api'
 
+export interface ArquivoRelatorioCsv {
+  arquivo: Blob
+  nomeArquivo: string
+}
+
 export interface FiltrosRelatorio {
   dataInicio?: string
   dataFim?: string
@@ -62,6 +67,67 @@ function validarLista<T>(
     }
     return dado
   })
+}
+
+function nomeArquivoDoCabecalho(disposition: unknown, fallback: string): string {
+  if (typeof disposition !== 'string') return fallback
+
+  const nomeCodificado = disposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i)?.[1]
+  if (nomeCodificado) {
+    try {
+      const nome = decodeURIComponent(nomeCodificado.trim().replace(/^"|"$/g, ''))
+      if (nome) return nome.split(/[\\/]/).pop() || fallback
+    } catch {
+      // Try the regular filename parameter if the encoded value is malformed.
+    }
+  }
+
+  const nome = disposition.match(/filename\s*=\s*(?:"([^"]+)"|([^;]+))/i)
+  const valor = (nome?.[1] ?? nome?.[2])?.trim()
+  return valor ? valor.split(/[\\/]/).pop() || fallback : fallback
+}
+
+async function obterArquivoCsv(
+  endpoint: string,
+  filtros: FiltrosRelatorio | FiltrosRelatorioDesempenho | undefined,
+  nomePadrao: string,
+): Promise<ArquivoRelatorioCsv> {
+  const resposta = await api.get<Blob>(endpoint, {
+    params: filtros,
+    responseType: 'blob',
+  })
+
+  if (!(resposta.data instanceof Blob)) {
+    throw new Error('O servidor retornou um arquivo CSV em formato inválido.')
+  }
+  if (resposta.data.size === 0) {
+    throw new Error('O relatório não contém dados para exportação.')
+  }
+
+  return {
+    arquivo: resposta.data,
+    nomeArquivo: nomeArquivoDoCabecalho(resposta.headers['content-disposition'], nomePadrao),
+  }
+}
+
+export function exportarRelatorioFaturamentoCsv(
+  filtros: FiltrosRelatorio = {},
+): Promise<ArquivoRelatorioCsv> {
+  return obterArquivoCsv('/relatorios/faturamento/csv', filtros, 'faturamento.csv')
+}
+
+export function exportarRelatorioEstoqueCsv(): Promise<ArquivoRelatorioCsv> {
+  return obterArquivoCsv('/relatorios/estoque/csv', undefined, 'estoque.csv')
+}
+
+export function exportarRelatorioDesempenhoCsv(
+  filtros: FiltrosRelatorioDesempenho = {},
+): Promise<ArquivoRelatorioCsv> {
+  return obterArquivoCsv(
+    '/relatorios/desempenho-vendedores/csv',
+    filtros,
+    'desempenho-vendedores.csv',
+  )
 }
 
 export async function obterRelatorioFaturamento(

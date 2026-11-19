@@ -64,24 +64,30 @@ async function entrar() {
 <template>
   <main class="login-page">
     <section class="login-brand" aria-label="AutoSeller">
-      <div class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 48 48" fill="none">
-          <path d="M8 31.5 12.4 19a4 4 0 0 1 3.8-2.7h15.6a4 4 0 0 1 3.8 2.7L40 31.5v7h-4v-4H12v4H8v-7Z" />
-          <path d="M13 27h22M16 33h.1M32 33h.1" />
-          <path d="m17 12 7-5 7 5" />
-        </svg>
+      <div class="brand-content">
+        <div class="brand-heading">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none">
+              <path d="M8 31.5 12.4 19a4 4 0 0 1 3.8-2.7h15.6a4 4 0 0 1 3.8 2.7L40 31.5v7h-4v-4H12v4H8v-7Z" />
+              <path d="M13 27h22M16 33h.1M32 33h.1" />
+              <path d="m17 12 7-5 7 5" />
+            </svg>
+          </div>
+          <a class="login-wordmark" href="/" aria-label="AutoSeller — início">AutoSeller</a>
+        </div>
+        <div class="brand-copy">
+          <p>Gestão inteligente para sua concessionária.</p>
+          <div class="brand-rule" aria-hidden="true"></div>
+          <span class="brand-caption">Tecnologia e organização para acompanhar o seu negócio.</span>
+        </div>
       </div>
-      <a class="login-wordmark" href="/" aria-label="AutoSeller — início">AutoSeller</a>
-      <p>Gestão inteligente para sua concessionária</p>
-      <div class="brand-rule" aria-hidden="true"></div>
-      <span class="brand-caption">Gestão que acompanha o seu negócio.</span>
     </section>
 
     <section class="login-panel">
       <div class="login-card">
         <div class="login-heading">
-          <h1>Acesse sua conta</h1>
-          <p>Entre com suas credenciais para continuar.</p>
+          <h1>Bem-vindo ao AutoSeller</h1>
+          <p>Acesse sua conta para continuar.</p>
         </div>
 
         <div v-if="auth.erro" class="alert alert--error" role="alert">
