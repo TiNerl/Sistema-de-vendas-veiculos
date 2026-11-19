@@ -20,6 +20,8 @@ const modalInativacaoAberto = ref(false)
 const usuarioSelecionado = ref<Usuario | null>(null)
 const cpfConfirmacao = ref('')
 const enviando = ref(false)
+const mostrarSenha = ref(false)
+const mostrarConfirmacaoSenha = ref(false)
 
 const formulario = reactive<NovoUsuario & { confirmarSenha: string }>({
   nome: '', cpf: '', senha: '', confirmarSenha: '', perfil: 'vendedor',
@@ -67,10 +69,18 @@ function cpfValido(valor: string): boolean {
 function abrirCadastro() {
   Object.keys(erros).forEach((campo) => delete erros[campo])
   formulario.nome = ''; formulario.cpf = ''; formulario.senha = ''; formulario.confirmarSenha = ''; formulario.perfil = 'vendedor'
+  mostrarSenha.value = false
+  mostrarConfirmacaoSenha.value = false
   erro.value = ''; sucesso.value = ''; modalCadastroAberto.value = true
 }
 
-function fecharCadastro() { if (!enviando.value) modalCadastroAberto.value = false }
+function fecharCadastro() {
+  if (!enviando.value) {
+    mostrarSenha.value = false
+    mostrarConfirmacaoSenha.value = false
+    modalCadastroAberto.value = false
+  }
+}
 
 function validarCadastro(): boolean {
   Object.keys(erros).forEach((campo) => delete erros[campo])
@@ -179,18 +189,84 @@ onMounted(carregarUsuarios)
       </div>
     </section>
 
-    <div v-if="modalCadastroAberto" class="modal-backdrop" @click.self="fecharCadastro">
+    <div v-if="modalCadastroAberto" class="modal-backdrop" @click.self="fecharCadastro" @keydown.esc="fecharCadastro">
       <section class="confirm-dialog user-form-modal" role="dialog" aria-modal="true" aria-labelledby="novo-usuario-titulo">
-        <h2 id="novo-usuario-titulo">Novo usuário</h2>
-        <form novalidate @submit.prevent="cadastrar">
-          <div class="form-grid user-form-grid">
-            <div class="field"><label for="novo-nome">Nome completo</label><input id="novo-nome" v-model="formulario.nome" autocomplete="name" maxlength="100" required :aria-invalid="Boolean(erros.nome)" /><span v-if="erros.nome" class="field-error">{{ erros.nome }}</span></div>
-            <div class="field"><label for="novo-cpf">CPF</label><input id="novo-cpf" v-model="formulario.cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" required :aria-invalid="Boolean(erros.cpf)" /><span v-if="erros.cpf" class="field-error">{{ erros.cpf }}</span></div>
-            <div class="field"><label for="nova-senha">Senha inicial</label><input id="nova-senha" v-model="formulario.senha" type="password" autocomplete="new-password" minlength="6" maxlength="255" required :aria-invalid="Boolean(erros.senha)" /><span v-if="erros.senha" class="field-error">{{ erros.senha }}</span><span v-else class="field-error">Mínimo de 6 caracteres.</span></div>
-            <div class="field"><label for="confirmar-senha">Confirmar senha</label><input id="confirmar-senha" v-model="formulario.confirmarSenha" type="password" autocomplete="new-password" required :aria-invalid="Boolean(erros.confirmarSenha)" /><span v-if="erros.confirmarSenha" class="field-error">{{ erros.confirmarSenha }}</span></div>
-            <div class="field"><label for="novo-perfil">Perfil</label><select id="novo-perfil" v-model="formulario.perfil" required><option value="admin">Administrador</option><option value="vendedor">Vendedor</option></select></div>
+        <header class="user-modal-header">
+          <div class="user-modal-heading">
+            <span class="user-modal-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4" /><path d="M3 20c.5-4 2.8-6 6-6s5.5 2 6 6M19 8v6m-3-3h6" /></svg>
+            </span>
+            <div>
+              <h2 id="novo-usuario-titulo">Novo usuário</h2>
+              <p>Preencha os dados para adicionar uma pessoa à equipe.</p>
+            </div>
           </div>
-          <div class="dialog-actions"><button class="button button--secondary" type="button" :disabled="enviando" @click="fecharCadastro">Cancelar</button><button class="button button--gold" type="submit" :disabled="enviando"><span v-if="enviando" class="spinner" aria-hidden="true"></span>{{ enviando ? 'Cadastrando...' : 'Cadastrar usuário' }}</button></div>
+          <button class="modal-close" type="button" :disabled="enviando" aria-label="Fechar cadastro de usuário" @click="fecharCadastro">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
+        </header>
+
+        <form class="user-modal-form" novalidate @submit.prevent="cadastrar">
+          <div class="user-modal-body">
+            <fieldset class="user-form-section">
+              <legend>Dados pessoais</legend>
+              <div class="form-grid user-form-grid">
+                <div class="field">
+                  <label for="novo-nome">Nome completo <span class="required-mark" aria-label="obrigatório">*</span></label>
+                  <input id="novo-nome" v-model="formulario.nome" autocomplete="name" maxlength="100" required :aria-invalid="Boolean(erros.nome)" aria-describedby="novo-nome-erro" />
+                  <span v-if="erros.nome" id="novo-nome-erro" class="field-error">{{ erros.nome }}</span>
+                </div>
+                <div class="field">
+                  <label for="novo-cpf">CPF <span class="required-mark" aria-label="obrigatório">*</span></label>
+                  <input id="novo-cpf" v-model="formulario.cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" required :aria-invalid="Boolean(erros.cpf)" aria-describedby="novo-cpf-erro" />
+                  <span v-if="erros.cpf" id="novo-cpf-erro" class="field-error">{{ erros.cpf }}</span>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="user-form-section">
+              <legend>Dados de acesso</legend>
+              <div class="form-grid user-form-grid">
+                <div class="field user-password-field">
+                  <label for="nova-senha">Senha inicial <span class="required-mark" aria-label="obrigatório">*</span></label>
+                  <div class="password-input">
+                    <input id="nova-senha" v-model="formulario.senha" :type="mostrarSenha ? 'text' : 'password'" autocomplete="new-password" minlength="6" maxlength="255" required :aria-invalid="Boolean(erros.senha)" aria-describedby="nova-senha-ajuda" />
+                    <button class="password-toggle" type="button" :aria-label="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'" :aria-pressed="mostrarSenha" @click="mostrarSenha = !mostrarSenha">
+                      <svg v-if="mostrarSenha" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" /><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c5 0 8.5 4.6 9 7-.2 1.1-1.2 2.8-2.8 4.3M6.2 6.2C3.8 7.8 2.3 10.4 2 12c.5 2.4 4 7 10 7 1 0 1.9-.2 2.8-.5" /></svg>
+                      <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg>
+                    </button>
+                  </div>
+                  <span v-if="erros.senha" id="nova-senha-ajuda" class="field-error">{{ erros.senha }}</span>
+                  <span v-else id="nova-senha-ajuda" class="field-hint">Mínimo de 6 caracteres.</span>
+                </div>
+
+                <div class="field user-password-field">
+                  <label for="confirmar-senha">Confirmar senha <span class="required-mark" aria-label="obrigatório">*</span></label>
+                  <div class="password-input">
+                    <input id="confirmar-senha" v-model="formulario.confirmarSenha" :type="mostrarConfirmacaoSenha ? 'text' : 'password'" autocomplete="new-password" required :aria-invalid="Boolean(erros.confirmarSenha)" aria-describedby="confirmar-senha-erro" />
+                    <button class="password-toggle" type="button" :aria-label="mostrarConfirmacaoSenha ? 'Ocultar confirmação de senha' : 'Mostrar confirmação de senha'" :aria-pressed="mostrarConfirmacaoSenha" @click="mostrarConfirmacaoSenha = !mostrarConfirmacaoSenha">
+                      <svg v-if="mostrarConfirmacaoSenha" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" /><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c5 0 8.5 4.6 9 7-.2 1.1-1.2 2.8-2.8 4.3M6.2 6.2C3.8 7.8 2.3 10.4 2 12c.5 2.4 4 7 10 7 1 0 1.9-.2 2.8-.5" /></svg>
+                      <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg>
+                    </button>
+                  </div>
+                  <span v-if="erros.confirmarSenha" id="confirmar-senha-erro" class="field-error">{{ erros.confirmarSenha }}</span>
+                </div>
+
+                <div class="field user-profile-field">
+                  <label for="novo-perfil">Perfil <span class="required-mark" aria-label="obrigatório">*</span></label>
+                  <select id="novo-perfil" v-model="formulario.perfil" required><option value="admin">Administrador</option><option value="vendedor">Vendedor</option></select>
+                </div>
+              </div>
+            </fieldset>
+          </div>
+
+          <footer class="dialog-actions user-modal-actions">
+            <button class="button button--secondary" type="button" :disabled="enviando" @click="fecharCadastro">Cancelar</button>
+            <button class="button button--gold" type="submit" :disabled="enviando">
+              <span v-if="enviando" class="spinner" aria-hidden="true"></span>
+              {{ enviando ? 'Cadastrando...' : 'Cadastrar usuário' }}
+            </button>
+          </footer>
         </form>
       </section>
     </div>
