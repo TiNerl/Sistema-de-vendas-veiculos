@@ -7,7 +7,9 @@ import { Veiculo } from '../veiculos/veiculo.entity';
 import { StatusVeiculo } from '../veiculos/veiculo-status.enum';
 import { Usuario } from '../usuarios/usuario.entity';
 import { FiltrarRelatorioDesempenhoDto } from './dto/filtrar-relatorio-desempenho.dto';
+import { stringify } from 'csv-stringify/sync';
 
+// alteração CSV
 type UsuarioRelatorio = {
     id: number,
     perfil: string,
@@ -57,6 +59,23 @@ export class RelatoriosService {
         return relatorio;
     }
 
+    async exportarRelatorioFaturamentoCsv(
+        filtro: FiltrarRelatorioFaturamentoDto,
+    ): Promise<string> {
+        const relatorio = await this.gerarRelatorioFaturamento(filtro);
+
+        return stringify(relatorio, {
+            bom: true,
+            header: true,
+            columns: [
+                { key: 'ano', header: 'Ano' },
+                { key: 'mes', header: 'Mês' },
+                { key: 'quantidade_vendas', header: 'Quantidade de vendas' },
+                { key: 'faturamento_total', header: 'Faturamento total' },
+            ],
+        });
+    }
+
     async gerarRelatorioEstoque() {
         const totais = await this.veiculoRepository
             .createQueryBuilder('veiculo')
@@ -80,6 +99,20 @@ export class RelatoriosService {
                 quantidade_veiculos: Number(total?.quantidade_veiculos ?? 0),
                 valor_total: Number(total?.valor_total ?? 0),
             };
+        });
+    }
+
+    async exportarRelatorioEstoqueCsv(): Promise<string> {
+        const relatorio = await this.gerarRelatorioEstoque();
+
+        return stringify(relatorio, {
+            bom: true,
+            header: true,
+            columns: [
+                { key: 'status', header: 'Status' },
+                { key: 'quantidade_veiculos', header: 'Quantidade de veículos' },
+                { key: 'valor_total', header: 'Valor total' },
+            ],
         });
     }
 
@@ -128,5 +161,24 @@ export class RelatoriosService {
             .getRawMany();
 
         return relatorio;
+    }
+
+    async exportarRelatorioDesempenhoVendedoresCsv(
+        filtro: FiltrarRelatorioDesempenhoDto,
+        usuario: UsuarioRelatorio,
+    ): Promise<string> {
+        const relatorio = await this.gerarRelatorioDesempenhoVendedores(filtro, usuario);
+
+        return stringify(relatorio, {
+            bom: true,
+            header: true,
+            columns: [
+                { key: 'id_usuario', header: 'ID do vendedor' },
+                { key: 'nome_usuario', header: 'Nome do vendedor' },
+                { key: 'quantidade_vendas', header: 'Quantidade de vendas' },
+                { key: 'faturamento_total', header: 'Faturamento total' },
+                { key: 'comissao_total', header: 'Comissão total' },
+            ],
+        });
     }
 }

@@ -63,6 +63,10 @@ A mesma tela de **Estoque de Veículos** é acessível a administradores (`/admi
 
 Administradores podem alterar entre `disponivel` e `em_manutencao` pela listagem, após confirmação; vendedores apenas consultam os status. `PATCH /veiculos/:id/status` é protegido no backend e não permite alterar manualmente estados de reserva ou venda nem veículos com venda concluída. Administradores também podem excluir veículos sem registros de venda; veículos com histórico são preservados. O sistema ainda não possui cadastro ou cancelamento de reservas, portanto o estado `reservado` permanece bloqueado para alteração manual até que exista um processo próprio.
 
+### Exportação do desempenho dos vendedores
+
+`GET /relatorios/desempenho-vendedores/csv` exporta o relatório de desempenho em CSV UTF-8 e inicia o download. A rota exige JWT e aceita os perfis `admin` e `vendedor`; administradores podem consultar todos os vendedores ou filtrar por `id_usuario`, `dataInicio` e `dataFim`, enquanto vendedores recebem somente os próprios dados. Os filtros de período são compartilhados com a consulta JSON do relatório.
+
 **Documentos-base do projeto:**
 
 | Documento | Onde está | Situação |
