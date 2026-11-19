@@ -12,7 +12,6 @@ const clientes = ref<Cliente[]>([])
 const busca = ref('')
 const clienteSelecionado = ref<Cliente | null>(null)
 const clienteParaInativar = ref<Cliente | null>(null)
-const historicoAberto = ref(false)
 const carregando = ref(false)
 const inativando = ref(false)
 const erro = ref('')
@@ -318,20 +317,11 @@ onUnmounted(() => {
         </dl>
 
         <div class="history-section">
-          <button
-            class="button button--secondary"
-            type="button"
-            :aria-expanded="historicoAberto"
-            @click="historicoAberto = !historicoAberto"
-          >
-            {{ historicoAberto ? 'Ocultar histórico de compras' : 'Histórico de compras' }}
-          </button>
           <RouterLink
-            v-if="historicoAberto"
             class="button button--secondary"
             :to="rotaHistorico(clienteSelecionado.id_cliente)"
           >
-            Consultar vendas deste cliente
+            Histórico de compras
           </RouterLink>
         </div>
 
