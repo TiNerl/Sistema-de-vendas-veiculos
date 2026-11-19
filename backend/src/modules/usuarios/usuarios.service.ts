@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CriarUsuarioDto } from './dto/criar-usuario.dto';
 import { Not, Repository } from 'typeorm';
@@ -78,7 +78,7 @@ export class UsuariosService {
             throw new NotFoundException('Usuario não encontrado');
         }
         if (!usuario.ativo) {
-            throw new ConflictException('Usuarios inativos não podem ser editados');
+            throw new BadRequestException('Usuarios inativos não podem ser editados');
         }
 
         const condicoes = [

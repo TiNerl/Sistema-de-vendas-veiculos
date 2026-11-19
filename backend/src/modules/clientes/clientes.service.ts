@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Cliente } from './cliente.entity';
@@ -87,7 +87,7 @@ export class ClientesService {
             throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
         }
         if (!cliente.ativo) {
-            throw new ConflictException('Clientes inativos não podem ser editados');
+            throw new BadRequestException('Clientes inativos não podem ser editados');
         }
 
         Object.assign(cliente, dto);

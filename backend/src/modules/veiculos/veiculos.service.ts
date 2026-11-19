@@ -153,7 +153,7 @@ export class VeiculosService {
         }
 
         if (veiculo.status === StatusVeiculo.VENDIDO) {
-            throw new ConflictException('Veículos vendidos não podem ser editados');
+            throw new BadRequestException('Veículos vendidos não podem ser editados');
         }
 
         const condicoes = [
@@ -196,6 +196,15 @@ export class VeiculosService {
 
             if (!veiculo) {
                 throw new NotFoundException('Veículo não encontrado');
+            }
+
+            if (
+                veiculo.status === StatusVeiculo.VENDIDO ||
+                veiculo.status === StatusVeiculo.RESERVADO
+            ) {
+                throw new BadRequestException(
+                    'Veículos vendidos ou reservados não podem ter o status alterado manualmente',
+                );
             }
 
             veiculo.status = status;
