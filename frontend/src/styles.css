@@ -382,22 +382,45 @@ a {
 .login-page {
   display: grid;
   min-height: 100vh;
-  grid-template-columns: minmax(340px, 0.92fr) 1.08fr;
+  min-height: 100svh;
+  grid-template-columns: minmax(0, 1.1fr) minmax(420px, 0.9fr);
   background: var(--color-white);
 }
 
 .login-brand {
+  position: relative;
+  isolation: isolate;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  padding: clamp(40px, 8vw, 110px);
+  min-width: 0;
+  padding: clamp(40px, 6vw, 88px);
   color: var(--color-white);
-  background: var(--color-navy);
+  background-color: var(--color-navy);
+  background-image:
+    linear-gradient(110deg, rgb(8 23 43 / 68%) 0%, rgb(8 23 43 / 43%) 55%, rgb(8 23 43 / 28%) 100%),
+    linear-gradient(0deg, rgb(8 23 43 / 34%), transparent 58%),
+    url('/assets/login-autosaller.jpg.avif');
+  background-position: center;
+  background-size: cover;
+}
+
+.brand-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+  width: 100%;
+}
+
+.brand-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .brand-mark {
   display: grid;
+  flex: 0 0 54px;
   width: 54px;
   height: 54px;
   place-items: center;
@@ -417,7 +440,6 @@ a {
 }
 
 .login-wordmark {
-  margin-top: 25px;
   color: var(--color-white);
   font-family: 'Segoe UI', Arial, sans-serif;
   font-size: clamp(2rem, 4vw, 2.8rem);
@@ -426,48 +448,67 @@ a {
   text-decoration: none;
 }
 
-.login-brand > p {
-  max-width: 310px;
-  margin: 12px 0 0;
-  color: #c4d0df;
-  font-size: 1.05rem;
-  line-height: 1.65;
+.brand-copy {
+  max-width: 480px;
+  padding-bottom: clamp(0px, 4vh, 38px);
+}
+
+.brand-copy > p {
+  max-width: 430px;
+  margin: 0;
+  color: var(--color-white);
+  font-size: clamp(1.75rem, 3.2vw, 2.7rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1.16;
+  text-wrap: balance;
 }
 
 .brand-rule {
-  width: 52px;
+  width: 54px;
   height: 3px;
-  margin-top: 38px;
-  background: var(--color-gold);
+  margin-top: 24px;
+  background: var(--color-gold-hover);
 }
 
 .brand-caption {
-  margin-top: 13px;
-  color: #91a0b4;
-  font-size: 0.8rem;
+  display: block;
+  max-width: 380px;
+  margin-top: 15px;
+  color: #c4d0df;
+  font-size: 0.96rem;
+  line-height: 1.6;
 }
 
 .login-panel {
   display: grid;
+  min-width: 0;
   place-items: center;
-  padding: 40px 24px;
-  background: #f8fafc;
+  padding: clamp(32px, 5vw, 68px);
+  background: linear-gradient(145deg, #fff 0%, #f5f7fa 100%);
 }
 
 .login-card {
-  width: min(100%, 420px);
+  width: min(100%, 460px);
+  padding: clamp(25px, 3vw, 40px);
+  border: 1px solid rgb(220 229 239 / 78%);
+  border-radius: 20px;
+  background: var(--color-white);
+  box-shadow: 0 18px 54px rgb(11 25 48 / 8%);
+  animation: login-enter 420ms ease both;
 }
 
 .login-heading {
-  margin-bottom: 26px;
+  margin-bottom: 30px;
 }
 
 .login-heading h1 {
-  margin: 9px 0 7px;
+  margin: 0 0 9px;
   font-family: 'Segoe UI', Arial, sans-serif;
   font-weight: 700;
-  font-size: 1.8rem;
-  letter-spacing: -0.045em;
+  font-size: clamp(1.7rem, 2.4vw, 2.1rem);
+  letter-spacing: -0.05em;
+  line-height: 1.18;
 }
 
 .login-heading p,
@@ -479,15 +520,34 @@ a {
 
 .form-stack {
   display: grid;
-  gap: 19px;
-  margin-top: 23px;
+  gap: 21px;
+  margin-top: 0;
+}
+
+.login-card .field {
+  gap: 9px;
+}
+
+.login-card .field label {
+  font-size: 0.9rem;
+}
+
+.login-card .field input {
+  min-height: 52px;
+  padding: 13px 15px;
+  border-radius: 10px;
+  background: #fcfdff;
+}
+
+.login-card .field input:focus {
+  background: var(--color-white);
 }
 
 .password-input {
   position: relative;
 }
 
-.password-input input {
+.login-card .password-input input {
   padding-right: 48px;
 }
 
@@ -511,6 +571,10 @@ a {
   background: #f0f3f7;
 }
 
+.password-toggle:focus-visible {
+  outline-offset: 1px;
+}
+
 .password-toggle svg {
   width: 18px;
   height: 18px;
@@ -523,14 +587,46 @@ a {
 
 .login-submit {
   width: 100%;
-  min-height: 48px;
-  margin-top: 5px;
+  min-height: 54px;
+  margin-top: 3px;
+  border-radius: 10px;
+  box-shadow: 0 7px 16px rgb(210 161 58 / 20%);
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.login-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgb(210 161 58 / 28%);
+}
+
+.login-submit:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .login-security {
-  margin-top: 25px;
+  margin-top: 26px;
   font-size: 0.78rem;
   text-align: center;
+}
+
+@keyframes login-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-card,
+  .login-submit {
+    animation: none;
+    transition: none;
+  }
 }
 
 .admin-layout {
@@ -816,6 +912,10 @@ a {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin-top: 22px;
+}
+
+.admin-shortcuts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .dashboard-link {
@@ -1251,7 +1351,7 @@ a {
   }
 }
 
-@media (max-width: 1300px) {
+@media (max-width: 900px) {
   .admin-shortcuts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1264,6 +1364,33 @@ a {
 }
 
 @media (max-width: 900px) {
+  .login-page {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  }
+
+  .login-brand {
+    padding: clamp(28px, 4vw, 44px);
+    background-position: 56% center;
+  }
+
+  .brand-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .login-wordmark {
+    font-size: clamp(1.8rem, 3.2vw, 2.4rem);
+  }
+
+  .brand-copy > p {
+    font-size: clamp(1.65rem, 3.5vw, 2.3rem);
+  }
+
+  .login-panel {
+    padding: clamp(28px, 4vw, 42px);
+  }
+
   .sidebar {
     width: 240px;
   }
@@ -1295,36 +1422,70 @@ a {
 @media (max-width: 700px) {
   .login-page {
     grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
   }
 
   .login-brand {
-    min-height: 230px;
-    padding: 32px 28px;
+    min-height: 236px;
+    padding: 25px 26px;
+    background-position: center 54%;
+  }
+
+  .brand-content {
+    flex: none;
+    min-height: 184px;
+    gap: 20px;
+  }
+
+  .brand-heading {
+    align-items: center;
+    flex-direction: row;
+    gap: 12px;
   }
 
   .brand-mark {
+    flex-basis: 46px;
     width: 46px;
     height: 46px;
   }
 
   .login-wordmark {
-    margin-top: 14px;
-    font-size: 2rem;
+    font-size: 1.85rem;
   }
 
-  .login-brand > p {
-    margin-top: 4px;
-    font-size: 0.95rem;
+  .brand-copy {
+    padding-bottom: 0;
   }
 
-  .brand-rule,
+  .brand-copy > p {
+    max-width: 360px;
+    font-size: clamp(1.35rem, 5vw, 1.75rem);
+  }
+
+  .brand-rule {
+    width: 40px;
+    height: 2px;
+    margin-top: 12px;
+  }
+
   .brand-caption {
-    display: none;
+    max-width: 340px;
+    margin-top: 8px;
+    font-size: 0.83rem;
   }
 
   .login-panel {
     align-items: start;
-    padding: 34px 22px 48px;
+    padding: 30px 22px 42px;
+  }
+
+  .login-card {
+    padding: clamp(23px, 6vw, 32px);
+    border-radius: 17px;
+  }
+
+  .login-heading {
+    margin-bottom: 25px;
   }
 
   .sidebar {

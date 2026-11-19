@@ -2,6 +2,9 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { isAxiosError } from 'axios'
 import {
+  exportarRelatorioDesempenhoCsv,
+  exportarRelatorioEstoqueCsv,
+  exportarRelatorioFaturamentoCsv,
   obterRelatorioDesempenho,
   obterRelatorioEstoque,
   obterRelatorioFaturamento,
@@ -37,6 +40,7 @@ const erroEstoque = ref('')
 const erroDesempenho = ref('')
 const erroVendedores = ref('')
 const erroExportacao = ref('')
+const sucessoExportacao = ref('')
 const exportando = ref<FormatoExportacao | null>(null)
 const carregandoFaturamento = ref(false)
 const carregandoEstoque = ref(false)
@@ -211,78 +215,84 @@ function periodoConsultado(): string {
   return `${filtrosExibidos.value.dataInicio || 'Sem data inicial'} a ${filtrosExibidos.value.dataFim || 'Sem data final'}`
 }
 
-function linhasExportacao(): { cabecalhos: string[]; linhas: string[][] } {
-  if (relatorioSelecionado.value === 'faturamento') {
-    return {
-      cabecalhos: ['Mês', 'Vendas', 'Faturamento'],
-      linhas: faturamento.value.map((linha) => [
-        mesAno(linha),
-        numero(linha.quantidade_vendas),
-        moeda(linha.faturamento_total),
-      ]),
-    }
-  }
-  if (relatorioSelecionado.value === 'estoque') {
-    return {
-      cabecalhos: ['Situação', 'Veículos', 'Valor total'],
-      linhas: estoque.value.map((linha) => [
-        rotulosStatus[linha.status] ?? linha.status,
-        numero(linha.quantidade_veiculos),
-        moeda(linha.valor_total),
-      ]),
-    }
-  }
-  return {
-    cabecalhos: ['Vendedor', 'Vendas', 'Faturamento', 'Comissão'],
-    linhas: desempenho.value.map((vendedor) => [
-      vendedor.nome_usuario,
-      numero(vendedor.quantidade_vendas),
-      moeda(vendedor.faturamento_total),
-      moeda(vendedor.comissao_total),
-    ]),
+function mensagemDaResposta(data: unknown): string | undefined {
+  if (typeof data !== 'object' || data === null || !('message' in data)) return
+  const message = data.message
+  if (typeof message === 'string') return message
+  if (Array.isArray(message) && message.every((item) => typeof item === 'string')) {
+    return message.join(' ')
   }
 }
 
-function escaparCsv(valor: string): string {
-  const protegido = /^[\t\r ]*[=+\-@]/.test(valor) ? `'${valor}` : valor
-  return `"${protegido.replaceAll('"', '""')}"`
-}
+async function mensagemErroExportacao(error: unknown): Promise<string> {
+  if (isAxiosError(error)) {
+    const data: unknown = error.response?.data
+    if (data instanceof Blob) {
+      const texto = await data.text()
+      if (texto) {
+        try {
+          const mensagem = mensagemDaResposta(JSON.parse(texto))
+          if (mensagem) return mensagem
+        } catch {
+          // Use the HTTP status when an error response is not JSON.
+        }
+      }
+    } else {
+      const mensagem = mensagemDaResposta(data)
+      if (mensagem) return mensagem
+    }
 
-function nomeArquivo(): string {
-  const base = relatorioSelecionado.value
-  if (base === 'estoque') return `${base}-posicao-atual`
-  const inicio = filtrosExibidos.value.dataInicio || 'inicio-aberto'
-  const fim = filtrosExibidos.value.dataFim || 'fim-aberto'
-  return `${base}-${inicio}-${fim}`
+    if (!error.response) {
+      return 'Falha na comunicação com o servidor durante a exportação. Verifique sua conexão e tente novamente.'
+    }
+    return `Não foi possível exportar o relatório (HTTP ${error.response.status}). Tente novamente.`
+  }
+
+  if (error instanceof Error && error.message) return error.message
+  return 'Não foi possível baixar o arquivo CSV. Tente novamente.'
 }
 
 function selecionarRelatorio(tipo: TipoRelatorio) {
   relatorioSelecionado.value = tipo
   erroExportacao.value = ''
+  sucessoExportacao.value = ''
 }
 
-function exportarCsv() {
+async function exportarCsv() {
   if (!podeExportar.value) return
 
   exportando.value = 'csv'
   erroExportacao.value = ''
+  sucessoExportacao.value = ''
+  let url: string | undefined
+  let link: HTMLAnchorElement | undefined
+  let downloadIniciado = false
+
   try {
-    const { cabecalhos, linhas } = linhasExportacao()
-    const conteudo = [cabecalhos, ...linhas]
-      .map((linha) => linha.map(escaparCsv).join(';'))
-      .join('\r\n')
-    const arquivo = new Blob([`\uFEFF${conteudo}`], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(arquivo)
-    const link = document.createElement('a')
+    const exportadores = {
+      faturamento: () => exportarRelatorioFaturamentoCsv(filtrosExibidos.value),
+      estoque: exportarRelatorioEstoqueCsv,
+      desempenho: () =>
+        exportarRelatorioDesempenhoCsv(filtrosDesempenhoSelecionados(filtrosExibidos.value)),
+    }
+    const { arquivo, nomeArquivo } = await exportadores[relatorioSelecionado.value]()
+    url = URL.createObjectURL(arquivo)
+    link = document.createElement('a')
     link.href = url
-    link.download = `${nomeArquivo()}.csv`
+    link.download = nomeArquivo
     document.body.append(link)
     link.click()
-    link.remove()
-    URL.revokeObjectURL(url)
-  } catch {
-    erroExportacao.value = 'Não foi possível gerar o arquivo CSV. Tente novamente.'
+    downloadIniciado = true
+    sucessoExportacao.value = 'O download do relatório CSV foi iniciado.'
+  } catch (error) {
+    if (url) URL.revokeObjectURL(url)
+    erroExportacao.value = await mensagemErroExportacao(error)
   } finally {
+    link?.remove()
+    if (url && downloadIniciado) {
+      const urlParaRevogar = url
+      window.setTimeout(() => URL.revokeObjectURL(urlParaRevogar), 1000)
+    }
     exportando.value = null
   }
 }
@@ -292,6 +302,7 @@ async function exportarPdf() {
 
   exportando.value = 'pdf'
   erroExportacao.value = ''
+  sucessoExportacao.value = ''
   try {
     await nextTick()
     if (typeof window.print !== 'function') {
@@ -456,6 +467,9 @@ watch(idVendedorSelecionado, () => {
 
       <p v-if="erroExportacao" class="alert alert--error report-export-error" role="alert">
         {{ erroExportacao }}
+      </p>
+      <p v-if="sucessoExportacao" class="alert alert--success notice" role="status">
+        {{ sucessoExportacao }}
       </p>
 
       <div v-if="relatorioSelecionado === 'faturamento'">

@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RelatoriosView from '@/views/RelatoriosView.vue'
 import type {
+  ArquivoRelatorioCsv,
   FiltrosRelatorio,
   FiltrosRelatorioDesempenho,
   RelatorioDesempenhoVendedor,
@@ -20,6 +21,13 @@ const mocks = vi.hoisted(() => ({
   obterRelatorioFaturamento: vi.fn<
     (filtros?: FiltrosRelatorio) => Promise<RelatorioFaturamentoMensal[]>
   >(),
+  exportarRelatorioDesempenhoCsv: vi.fn<
+    (filtros?: FiltrosRelatorioDesempenho) => Promise<ArquivoRelatorioCsv>
+  >(),
+  exportarRelatorioEstoqueCsv: vi.fn<() => Promise<ArquivoRelatorioCsv>>(),
+  exportarRelatorioFaturamentoCsv: vi.fn<
+    (filtros?: FiltrosRelatorio) => Promise<ArquivoRelatorioCsv>
+  >(),
 }))
 
 vi.mock('@/stores/auth', () => ({
@@ -31,6 +39,9 @@ vi.mock('@/services/usuarios.service', () => ({
 }))
 
 vi.mock('@/services/relatorios.service', () => ({
+  exportarRelatorioDesempenhoCsv: mocks.exportarRelatorioDesempenhoCsv,
+  exportarRelatorioEstoqueCsv: mocks.exportarRelatorioEstoqueCsv,
+  exportarRelatorioFaturamentoCsv: mocks.exportarRelatorioFaturamentoCsv,
   obterRelatorioDesempenho: mocks.obterRelatorioDesempenho,
   obterRelatorioEstoque: mocks.obterRelatorioEstoque,
   obterRelatorioFaturamento: mocks.obterRelatorioFaturamento,
@@ -62,6 +73,10 @@ async function abrirDesempenho() {
 describe('RelatoriosView — desempenho por vendedor', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    vi.stubGlobal('URL', {
+      createObjectURL: vi.fn(() => 'blob:relatorio'),
+      revokeObjectURL: vi.fn(),
+    })
     mocks.auth.usuario = { perfil: 'admin' }
     mocks.listarUsuarios.mockResolvedValue(usuarios)
     mocks.obterRelatorioDesempenho.mockImplementation(async (filtros = {}) =>
@@ -71,6 +86,18 @@ describe('RelatoriosView — desempenho por vendedor', () => {
     )
     mocks.obterRelatorioEstoque.mockResolvedValue([])
     mocks.obterRelatorioFaturamento.mockResolvedValue([])
+    mocks.exportarRelatorioDesempenhoCsv.mockResolvedValue({
+      arquivo: new Blob(['csv']),
+      nomeArquivo: 'desempenho-vendedores.csv',
+    })
+    mocks.exportarRelatorioEstoqueCsv.mockResolvedValue({
+      arquivo: new Blob(['csv']),
+      nomeArquivo: 'estoque.csv',
+    })
+    mocks.exportarRelatorioFaturamentoCsv.mockResolvedValue({
+      arquivo: new Blob(['csv']),
+      nomeArquivo: 'faturamento.csv',
+    })
   })
 
   it('mantém a visão consolidada e filtra pelo identificador selecionado', async () => {
@@ -124,6 +151,85 @@ describe('RelatoriosView — desempenho por vendedor', () => {
     expect(wrapper.find('#relatorio-vendedor').exists()).toBe(false)
     expect(mocks.listarUsuarios).not.toHaveBeenCalled()
     expect(mocks.obterRelatorioDesempenho).toHaveBeenCalledWith({})
+    wrapper.unmount()
+  })
+
+  it('exporta faturamento com o período consultado e mostra confirmação', async () => {
+    mocks.obterRelatorioFaturamento.mockResolvedValue([
+      { ano: 2026, mes: 5, quantidade_vendas: 2, faturamento_total: 10000 },
+    ])
+    const wrapper = mount(RelatoriosView)
+    await flushPromises()
+    await wrapper.get('#relatorio-data-inicio').setValue('2026-05-01')
+    await wrapper.get('#relatorio-data-fim').setValue('2026-05-31')
+    await wrapper.get('.reports-filters').trigger('submit')
+    await flushPromises()
+
+    await wrapper.get('.report-export-actions button:nth-child(2)').trigger('click')
+    await flushPromises()
+
+    expect(mocks.exportarRelatorioFaturamentoCsv).toHaveBeenCalledWith({
+      dataInicio: '2026-05-01',
+      dataFim: '2026-05-31',
+    })
+    expect(wrapper.get('[role="status"]').text()).toContain('download do relatório CSV')
+    expect(wrapper.get('.report-export-actions button:nth-child(2)').attributes('disabled')).toBe(
+      undefined,
+    )
+    wrapper.unmount()
+  })
+
+  it('exporta desempenho com vendedor filtrado sem permitir exportação duplicada', async () => {
+    mocks.obterRelatorioDesempenho.mockResolvedValue(desempenho)
+    const wrapper = await abrirDesempenho()
+    await wrapper.get('#relatorio-vendedor').setValue('2')
+    await flushPromises()
+
+    let concluirExportacao!: (arquivo: ArquivoRelatorioCsv) => void
+    mocks.exportarRelatorioDesempenhoCsv.mockReturnValue(
+      new Promise((resolve) => {
+        concluirExportacao = resolve
+      }),
+    )
+    const botaoExportar = wrapper.get('.report-export-actions button:nth-child(2)')
+    await botaoExportar.trigger('click')
+    await flushPromises()
+
+    expect(mocks.exportarRelatorioDesempenhoCsv).toHaveBeenCalledWith({ id_usuario: 2 })
+    expect(botaoExportar.attributes('disabled')).toBeDefined()
+    expect(botaoExportar.text()).toContain('Exportando CSV...')
+
+    concluirExportacao({ arquivo: new Blob(['csv']), nomeArquivo: 'desempenho-vendedores.csv' })
+    await flushPromises()
+    expect(wrapper.get('[role="status"]').text()).toContain('download do relatório CSV')
+    wrapper.unmount()
+  })
+
+  it('não envia identificador de vendedor ao exportar como perfil Vendedor', async () => {
+    mocks.auth.usuario = { perfil: 'vendedor' }
+    mocks.obterRelatorioDesempenho.mockResolvedValue([desempenho[0]])
+    const wrapper = await abrirDesempenho()
+
+    await wrapper.get('.report-export-actions button:nth-child(2)').trigger('click')
+    await flushPromises()
+
+    expect(mocks.exportarRelatorioDesempenhoCsv).toHaveBeenCalledWith({})
+    wrapper.unmount()
+  })
+
+  it('exibe falhas de exportação e não deixa URL de download pendente', async () => {
+    mocks.obterRelatorioFaturamento.mockResolvedValue([
+      { ano: 2026, mes: 5, quantidade_vendas: 1, faturamento_total: 1000 },
+    ])
+    mocks.exportarRelatorioFaturamentoCsv.mockRejectedValue(new Error('Servidor indisponível'))
+    const wrapper = mount(RelatoriosView)
+    await flushPromises()
+
+    await wrapper.get('.report-export-actions button:nth-child(2)').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('.report-export-error').text()).toBe('Servidor indisponível')
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
     wrapper.unmount()
   })
 })
