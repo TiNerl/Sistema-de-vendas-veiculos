@@ -108,4 +108,16 @@ describe('CadastrarVendaView', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('Selecione um vendedor responsável')
     expect(mocks.cadastrarVenda).not.toHaveBeenCalled()
   })
+
+  it('atualiza o resumo financeiro com o veículo e o desconto existentes', async () => {
+    const wrapper = await montarFormulario()
+
+    await wrapper.get('#veiculo-venda').setValue('20')
+    await wrapper.get('#desconto-venda').setValue(10)
+
+    const resumo = wrapper.get('.sale-summary')
+    expect(resumo.text()).toContain('R$ 10.000,00')
+    expect(resumo.text()).toContain('R$ 1.000,00')
+    expect(resumo.text()).toContain('R$ 9.000,00')
+  })
 })
