@@ -149,7 +149,7 @@ onMounted(carregarDados)
         <div class="form-section-heading">
           <h2>Dados da venda</h2>
           <p v-if="eAdmin">Selecione o vendedor responsável por esta venda.</p>
-          <p v-else>O vendedor responsável é definido automaticamente pela sessão autenticada.</p>
+          <p v-else>O vendedor responsável é definido automaticamente como o usuário atual.</p>
         </div>
 
         <div v-if="eAdmin" class="field">

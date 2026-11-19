@@ -1020,6 +1020,32 @@ a {
   text-decoration: underline;
 }
 
+.table-action--danger {
+  color: var(--color-danger);
+}
+
+.table-action--danger:hover {
+  color: #7e292f;
+}
+
+.table-action--disabled {
+  color: #9aa7b8;
+  cursor: default;
+}
+
+.user-form-modal {
+  width: min(100%, 680px);
+}
+
+.user-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 20px;
+}
+
+.user-form-grid .field:last-child {
+  grid-column: 1 / -1;
+}
+
 .confirm-copy {
   margin: 5px 0 22px;
   color: var(--color-muted);

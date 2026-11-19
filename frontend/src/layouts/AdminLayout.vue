@@ -102,17 +102,6 @@ async function sair() {
               </svg>
               <span>Aprovação de descontos</span>
             </RouterLink>
-            <RouterLink
-              class="sidebar-link"
-              exact-active-class="sidebar-link--current"
-              to="/admin/relatorios"
-              @click="menuAberto = false"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 19V5m0 14h16M8 15v-4m4 4V7m4 8v-6" />
-              </svg>
-              <span>Relatórios</span>
-            </RouterLink>
           </div>
 
           <span class="nav-label">Gestão de estoque</span>
@@ -144,6 +133,21 @@ async function sair() {
             </RouterLink>
           </div>
 
+          <span class="nav-label">Relatórios e análise</span>
+          <div class="sidebar-nav">
+            <RouterLink
+              class="sidebar-link"
+              exact-active-class="sidebar-link--current"
+              to="/admin/relatorios"
+              @click="menuAberto = false"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 19V5m0 14h16M8 15v-4m4 4V7m4 8v-6" />
+              </svg>
+              <span>Relatórios</span>
+            </RouterLink>
+          </div>
+
           <span class="nav-label">Gestão de usuários</span>
           <div class="sidebar-nav nav-group">
             <RouterLink
@@ -155,29 +159,7 @@ async function sair() {
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M16 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-5A4.5 4.5 0 0 0 2 18.5V20m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm9-4v6m3-3h-6" />
               </svg>
-              <span>Lista de usuários</span>
-            </RouterLink>
-            <RouterLink
-              class="sidebar-link"
-              exact-active-class="sidebar-link--current"
-              to="/admin/usuarios/cadastrar"
-              @click="menuAberto = false"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M15 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-5A4.5 4.5 0 0 0 1 18.5V20m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm11-3v8m4-4h-8" />
-              </svg>
-              <span>Cadastrar usuário</span>
-            </RouterLink>
-            <RouterLink
-              class="sidebar-link"
-              exact-active-class="sidebar-link--current"
-              to="/admin/usuarios/inativar"
-              @click="menuAberto = false"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M16 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-5A4.5 4.5 0 0 0 2 18.5V20m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm15-4H14" />
-              </svg>
-              <span>Inativar usuário</span>
+              <span>Usuários</span>
             </RouterLink>
           </div>
         </template>

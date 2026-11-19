@@ -30,11 +30,9 @@ describe('atalhos dos dashboards', () => {
       '/admin/descontos',
       '/admin/relatorios',
       '/admin/usuarios',
-      '/admin/usuarios/cadastrar',
-      '/admin/usuarios/inativar',
     ])
     expect(wrapper.text()).toContain('Relatórios')
-    expect(wrapper.findAll('.dashboard-shortcut-icon')).toHaveLength(8)
+    expect(wrapper.findAll('.dashboard-shortcut-icon')).toHaveLength(6)
   })
 
   it('apresenta relatórios e todas as áreas de vendedor sem atalhos administrativos', () => {

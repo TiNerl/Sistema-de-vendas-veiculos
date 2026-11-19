@@ -44,22 +44,6 @@ const atalhos = [
     icone:
       'M16 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-5A4.5 4.5 0 0 0 2 18.5V20m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
   },
-  {
-    titulo: 'Cadastrar usuário',
-    descricao: 'Adicione administradores ou vendedores à equipe.',
-    destino: '/admin/usuarios/cadastrar',
-    acao: 'Cadastrar usuário',
-    icone:
-      'M15 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-5A4.5 4.5 0 0 0 1 18.5V20m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm11-3v8m4-4h-8',
-  },
-  {
-    titulo: 'Inativar usuário',
-    descricao: 'Bloqueie o acesso de um usuário sem apagar os registros relacionados.',
-    destino: '/admin/usuarios/inativar',
-    acao: 'Gerenciar acessos',
-    icone:
-      'M16 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-5A4.5 4.5 0 0 0 2 18.5V20m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm15-4H14',
-  },
 ]
 </script>
 
