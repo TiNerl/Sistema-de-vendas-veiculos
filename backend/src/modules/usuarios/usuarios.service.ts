@@ -41,6 +41,15 @@ export class UsuariosService {
     }
 
     async cadastrar(dto: CriarUsuarioDto) {
+        const usuarioExistente = await this.repository.findOne({
+            where: { cpf: dto.cpf },
+        });
+
+        if (usuarioExistente) {
+            throw new ConflictException(
+                'Já existe um usuário cadastrado com este CPF',
+            );
+        }
         const senha = await bcrypt.hash(dto.senha, 10);
         const usuario = this.repository.create({
             nome: dto.nome,

@@ -86,7 +86,11 @@ export class ClientesService {
         if (!cliente) {
             throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
         }
-
+        if (!cliente.ativo) {
+            throw new ConflictException(
+                'Clientes inativos não podem ser editados',
+            );
+        }
         Object.assign(cliente, dto);
         return await this.repository.save(cliente);
     }
