@@ -55,6 +55,19 @@ export class FiltrarVeiculosDto {
     @Min(1886)
     @Max(2100)
     anoMax?: number;
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1886)
+    @Max(2100)
+    anoInicio?: number;
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1886)
+    @Max(2100)
+    anoFim?: number;
 
     @IsOptional()
     @IsString()

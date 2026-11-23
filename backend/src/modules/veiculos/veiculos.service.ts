@@ -52,6 +52,8 @@ export class VeiculosService {
             ano,
             anoMin,
             anoMax,
+            anoInicio,
+            anoFim,
             combustivel,
             status,
         } = dto;
@@ -66,12 +68,18 @@ export class VeiculosService {
             );
         }
 
-        if (anoMin !== undefined && anoMax !== undefined && anoMin > anoMax) {
+        const anoInicial = anoInicio ?? anoMin;
+        const anoFinal = anoFim ?? anoMax;
+
+        if (
+            anoInicial !== undefined &&
+            anoFinal !== undefined &&
+            anoInicial > anoFinal
+        ) {
             throw new BadRequestException(
                 'O ano inicial não pode ser maior que o ano final',
             );
         }
-
         const query = this.repository.createQueryBuilder('veiculo');
 
         const marcaNormalizada = marca?.trim();
@@ -101,12 +109,16 @@ export class VeiculosService {
             query.andWhere('veiculo.ano = :ano', { ano });
         }
 
-        if (anoMin !== undefined) {
-            query.andWhere('veiculo.ano >= :anoMin', { anoMin });
+        if (anoInicial !== undefined) {
+            query.andWhere('veiculo.ano >= :anoMin', {
+                anoMin: anoInicial,
+            });
         }
 
-        if (anoMax !== undefined) {
-            query.andWhere('veiculo.ano <= :anoMax', { anoMax });
+        if (anoFinal !== undefined) {
+            query.andWhere('veiculo.ano <= :anoMax', {
+                anoMax: anoFinal,
+            });
         }
 
         if (combustivel) {
@@ -146,6 +158,11 @@ export class VeiculosService {
                 `Veículo com ID ${id} não encontrado`,
             );
         }
+        if (veiculo.status === StatusVeiculo.VENDIDO) {
+            throw new ConflictException(
+                'Veículos vendidos não podem ser editados',
+            );
+        }
 
         const condicoes = [
             ...(dto.placa !== undefined ? [{ placa: dto.placa }] : []),
@@ -174,6 +191,12 @@ export class VeiculosService {
     }
 
     async atualizarStatus(id: number, status: StatusVeiculo) {
+        if (status !== StatusVeiculo.EM_MANUTENCAO) {
+            throw new BadRequestException(
+                'O status só pode ser alterado manualmente para em_manutencao',
+            );
+        }
+
         return this.dataSource.transaction(async (manager) => {
             const veiculo = await manager.findOne(Veiculo, {
                 where: { id_veiculo: id },
@@ -182,7 +205,11 @@ export class VeiculosService {
             if (!veiculo) {
                 throw new NotFoundException('Veículo não encontrado');
             }
-
+            if (veiculo.status === StatusVeiculo.VENDIDO) {
+                throw new ConflictException(
+                    'Veículos vendidos não podem ser editados',
+                );
+            }
             veiculo.status = status;
             return manager.save(Veiculo, veiculo);
         });
