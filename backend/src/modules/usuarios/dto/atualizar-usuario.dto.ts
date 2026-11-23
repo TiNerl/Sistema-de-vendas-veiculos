@@ -4,17 +4,17 @@ import {
     IsNotEmpty,
     MinLength,
     MaxLength,
-    ValidateIf,
+    IsOptional,
 } from 'class-validator';
 
 export class AtualizarUsuarioDto {
-    @ValidateIf((_object, value) => value !== undefined)
+    @IsOptional()
     @IsString()
     @IsNotEmpty()
     @MaxLength(100)
     nome?: string;
 
-    @ValidateIf((_object, value) => value !== undefined)
+    @IsOptional()
     @IsString()
     @IsNotEmpty()
     @MinLength(6)

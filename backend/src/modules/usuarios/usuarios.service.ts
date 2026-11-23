@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    ConflictException,
+    BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CriarUsuarioDto } from './dto/criar-usuario.dto';
 import { Repository } from 'typeorm';
@@ -69,7 +74,7 @@ export class UsuariosService {
 
     async atualizar(id_usuario: number, dto: AtualizarUsuarioDto) {
         if (dto.nome === undefined && dto.senha === undefined) {
-            throw new ConflictException(
+            throw new BadRequestException(
                 'Informe pelo menos um campo para atualizar',
             );
         }
