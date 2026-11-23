@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Usuario } from './usuario.entity';
 import { InativarUsuarioDto } from './dto/inativar-usuario.dto';
+import { AtualizarUsuarioDto } from './dto/atualizar-usuario.dto';
 
 export type UsuarioAutenticado = Omit<Usuario, 'senha'>;
 
@@ -62,6 +63,38 @@ export class UsuariosService {
 
         const salvo = await this.repository.save(usuario);
         const { senha: _senha, ...resposta } = salvo;
+        return resposta;
+    }
+
+
+    async atualizar(id_usuario: number, dto: AtualizarUsuarioDto) {
+        if (dto.nome === undefined && dto.senha === undefined) {
+            throw new ConflictException(
+                'Informe pelo menos um campo para atualizar',
+            );
+        }
+
+        const usuario = await this.repository.findOneBy({ id_usuario });
+
+        if (!usuario) {
+            throw new NotFoundException('Usuário não encontrado');
+        }
+
+        if (!usuario.ativo) {
+            throw new ConflictException('Não é possível editar um usuário inativo');
+        }
+
+        if (dto.nome !== undefined) {
+            usuario.nome = dto.nome;
+        }
+
+        if (dto.senha !== undefined) {
+            usuario.senha = await bcrypt.hash(dto.senha, 10);
+        }
+
+        const atualizado = await this.repository.save(usuario);
+
+        const { senha: _senha, ...resposta } = atualizado;
         return resposta;
     }
 

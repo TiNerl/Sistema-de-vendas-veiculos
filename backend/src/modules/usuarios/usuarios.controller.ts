@@ -5,7 +5,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { InativarUsuarioDto } from './dto/inativar-usuario.dto';
-
+import { AtualizarUsuarioDto } from './dto/atualizar-usuario.dto';
 
 @Controller('usuarios')
 export class UsuariosController {
@@ -30,6 +30,17 @@ export class UsuariosController {
     @Post()
     cadastrar(@Body() dto: CriarUsuarioDto) {
         return this.usuariosService.cadastrar(dto);
+    }
+
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
+    @Patch(':id')
+    atualizar(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: AtualizarUsuarioDto,
+    ) {
+        return this.usuariosService.atualizar(id, dto);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
