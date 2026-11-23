@@ -19,7 +19,7 @@ export class Usuario {
     @Column({ type: 'varchar', length: 14, unique: true })
     cpf: string;
 
-    @Column({ type: 'varchar', length: 255 })
+    @Column({ type: 'varchar', length: 255, select: false })
     senha: string;
 
     @Column({ type: 'varchar', length: 20 })
