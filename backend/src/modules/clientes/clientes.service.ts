@@ -49,6 +49,10 @@ export class ClientesService {
             throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
         }
 
+        if (!cliente.ativo) {
+            throw new ConflictException(`O cliente já está inativo`);
+        }
+
         cliente.ativo = false;
         return await this.repository.save(cliente);
     }

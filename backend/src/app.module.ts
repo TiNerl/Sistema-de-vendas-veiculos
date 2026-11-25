@@ -10,6 +10,7 @@ import { ClientesModule } from './modules/clientes/clientes.module';
 import { VeiculosModule } from './modules/veiculos/veiculos.module';
 import { VendasModule } from './modules/vendas/vendas.module';
 import { RelatoriosModule } from './modules/relatorios/relatorios.module';
+import { AuditoriaModule } from './modules/auditoria/auditoria.module';
 
 
 //export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -45,6 +46,7 @@ import { RelatoriosModule } from './modules/relatorios/relatorios.module';
     VeiculosModule,
     VendasModule,
     RelatoriosModule,
+    AuditoriaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

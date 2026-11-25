@@ -1,4 +1,4 @@
-import { Query, Body, Controller, Get, Param, ParseIntPipe, Post, Patch, UseGuards } from '@nestjs/common';
+import { Query, Body, Controller, Get, Param, ParseIntPipe, Post, Patch, UseGuards, Req } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -7,6 +7,11 @@ import { CriarVeiculoDto } from './dto/criar-veiculo.dto';
 import { VeiculosService } from './veiculos.service';
 import { AtualizarVeiculoDto } from './dto/atualizar-veiculo.dto';
 import { FiltrarVeiculosDto } from './dto/filtrar-veiculos.dto';
+import type { Perfil } from '../usuarios/usuario.entity';
+
+type RequisicaoAutenticada = {
+    user: { id: number; perfil: Perfil };
+};
 
 @Controller('veiculos')
 export class VeiculosController {
@@ -29,8 +34,8 @@ export class VeiculosController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin', 'vendedor')
     @Post()
-    cadastrar(@Body() dto: CriarVeiculoDto) {
-        return this.veiculosService.cadastrar(dto);
+    cadastrar(@Body() dto: CriarVeiculoDto, @Req() request: RequisicaoAutenticada) {
+        return this.veiculosService.cadastrar(dto, request.user.id);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)

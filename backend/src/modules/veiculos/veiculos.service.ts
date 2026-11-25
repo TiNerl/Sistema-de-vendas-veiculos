@@ -11,6 +11,7 @@ import { Veiculo } from './veiculo.entity';
 import { StatusVeiculo } from './veiculo-status.enum';
 import { AtualizarVeiculoDto } from './dto/atualizar-veiculo.dto';
 import { FiltrarVeiculosDto } from './dto/filtrar-veiculos.dto';
+import { Auditoria } from '../auditoria/auditoria.entity';
 
 @Injectable()
 export class VeiculosService {
@@ -20,28 +21,44 @@ export class VeiculosService {
         private readonly dataSource: DataSource,
     ) { }
 
-    async cadastrar(dto: CriarVeiculoDto) {
-        const existente = await this.repository.findOne({
-            where: [
-                { placa: dto.placa },
-                { chassi: dto.chassi },
-                { renavam: dto.renavam },
-            ],
+    async cadastrar(dto: CriarVeiculoDto, atorId: number) {
+        return this.dataSource.transaction(async (manager) => {
+            const existente = await manager.findOne(Veiculo, {
+                where: [
+                    { placa: dto.placa },
+                    { chassi: dto.chassi },
+                    { renavam: dto.renavam },
+                ],
+            });
+
+            if (existente) {
+                throw new ConflictException('Placa, chassi ou RENAVAM já cadastrado');
+            }
+
+            const veiculo = manager.create(Veiculo, {
+                ...dto,
+                preco: dto.preco.toFixed(2),
+                status: StatusVeiculo.DISPONIVEL,
+            });
+
+            const veiculoSalvo = await manager.save(Veiculo, veiculo);
+
+            await manager.insert(Auditoria, {
+                ator: { id_usuario: atorId },
+                acao: 'VEICULO_CADASTRADO',
+                recursoTipo: 'veiculo',
+                recursoId: veiculoSalvo.id_veiculo,
+                detalhes: {
+                    marca: veiculoSalvo.marca,
+                    modelo: veiculoSalvo.modelo,
+                    ano: veiculoSalvo.ano,
+                    placa: veiculoSalvo.placa,
+                },
+            });
+
+            return veiculoSalvo;
         });
-
-        if (existente) {
-            throw new ConflictException('Placa, chassi ou RENAVAM já cadastrado');
-        }
-
-        const veiculo = this.repository.create({
-            ...dto,
-            preco: dto.preco.toFixed(2),
-            status: StatusVeiculo.DISPONIVEL,
-        });
-
-        return this.repository.save(veiculo);
     }
-
 
     async filtrar(dto: FiltrarVeiculosDto) {
         const {
