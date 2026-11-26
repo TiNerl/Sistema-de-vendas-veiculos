@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    ConflictException,
+    BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, ILike, Not } from 'typeorm';
 import { Cliente } from './cliente.entity';
 import { CriarClienteDto } from './dto/criar-cliente.dto';
 import { AtualizarClienteDto } from './dto/atualizar-cliente.dto';
@@ -62,9 +67,9 @@ export class ClientesService {
 
         return this.repository.find({
             where: [
-                { nome: Like(termo) },
-                { cpf: Like(termo) },
-                { email: Like(termo) },
+                { nome: ILike(termo) },
+                { cpf: ILike(termo) },
+                { email: ILike(termo) },
             ],
             order: { nome: 'ASC' },
         });
@@ -81,16 +86,52 @@ export class ClientesService {
     }
 
     async atualizar(id: number, dto: AtualizarClienteDto) {
+        if (Object.keys(dto).length === 0) {
+            throw new BadRequestException(
+                'Informe pelo menos um campo para atualizar',
+            );
+        }
+
         const cliente = await this.repository.findOneBy({ id_cliente: id });
 
         if (!cliente) {
             throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
         }
+
         if (!cliente.ativo) {
             throw new ConflictException(
                 'Clientes inativos não podem ser editados',
             );
         }
+
+        const condicoes = [];
+
+        if (dto.cpf !== undefined) {
+            condicoes.push({
+                cpf: dto.cpf,
+                id_cliente: Not(id),
+            });
+        }
+
+        if (dto.email !== undefined) {
+            condicoes.push({
+                email: dto.email,
+                id_cliente: Not(id),
+            });
+        }
+
+        if (condicoes.length > 0) {
+            const clienteExistente = await this.repository.findOne({
+                where: condicoes,
+            });
+
+            if (clienteExistente) {
+                throw new ConflictException(
+                    'Já existe outro cliente cadastrado com este CPF ou e-mail',
+                );
+            }
+        }
+
         Object.assign(cliente, dto);
         return await this.repository.save(cliente);
     }
