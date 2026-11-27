@@ -1,4 +1,5 @@
 import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsCPF } from 'cpf-cnpj-validator/class-validator'
 
 export class AtualizarClienteDto {
   @IsOptional()
@@ -7,6 +8,7 @@ export class AtualizarClienteDto {
   @MaxLength(100, { message: 'O nome deve ter no máximo 100 caracteres' })
   nome?: string;
 
+  @IsCPF({ message: 'Formato de CPF inválido' })
   @IsOptional()
   @IsString()
   @MinLength(11, { message: 'O CPF deve ter exatamente 11 dígitos' })
