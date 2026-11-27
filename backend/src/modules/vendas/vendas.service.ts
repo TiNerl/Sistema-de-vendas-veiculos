@@ -10,6 +10,7 @@ import { FiltrarVendasDto } from './dto/filtrar-vendas.dto';
 import { StatusVeiculo } from '../veiculos/veiculo-status.enum';
 import type { StatusVenda } from './venda.entity';
 import type { Perfil } from '../usuarios/usuario.entity';
+import { Auditoria } from '../auditoria/auditoria.entity';
 
 @Injectable()
 export class VendasService {
@@ -138,7 +139,7 @@ export class VendasService {
     ): Promise<Venda[]> {
         const { cliente_id, dataInicio, dataFim } = dto;
 
-        
+
         if (dataInicio && dataFim && new Date(dataInicio) > new Date(dataFim)) {
             throw new BadRequestException('A data inicial não pode ser posterior à data final');
         }
@@ -198,7 +199,7 @@ export class VendasService {
         return venda;
     }
 
-    async aprovar(id: number) {
+    async aprovar(id: number, atorId: number) {
         return this.dataSource.transaction(async (manager) => {
             const venda = await manager.findOne(Venda, {
                 where: {
@@ -249,6 +250,17 @@ export class VendasService {
                 throw new ConflictException('O veículo não está mais reservado');
             }
 
+            await manager.insert(Auditoria, {
+                ator: { id_usuario: atorId },
+                acao: 'VENDA_APROVADA',
+                recursoTipo: 'venda',
+                recursoId: id,
+                detalhes: {
+                    statusAnterior: 'pendente',
+                    statusAtual: 'concluida',
+                },
+            });
+
             return manager.findOneOrFail(Venda, {
                 where: {
                     id_venda: venda.id_venda,
@@ -263,7 +275,7 @@ export class VendasService {
         });
     }
 
-    async rejeitar(id: number) {
+    async rejeitar(id: number, atorId: number) {
         return this.dataSource.transaction(async (manager) => {
             const venda = await manager.findOne(Venda, {
                 where: {
@@ -313,6 +325,17 @@ export class VendasService {
             if (resultadoVeiculo.affected !== 1) {
                 throw new ConflictException('O veículo não está mais reservado');
             }
+
+            await manager.insert(Auditoria, {
+                ator: { id_usuario: atorId },
+                acao: 'VENDA_REJEITADA',
+                recursoTipo: 'venda',
+                recursoId: id,
+                detalhes: {
+                    statusAnterior: 'pendente',
+                    statusAtual: 'rejeitada',
+                },
+            });
 
             return manager.findOneOrFail(Venda, {
                 where: {

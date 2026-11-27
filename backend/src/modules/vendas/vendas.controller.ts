@@ -42,14 +42,14 @@ export class VendasController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
     @Patch(':id/aprovar')
-    aprovar(@Param('id', ParseIntPipe) id:number) {
-        return this.vendasService.aprovar(id);
+    aprovar(@Param('id', ParseIntPipe) id:number, @Req() request: RequisicaoAutenticada) {
+        return this.vendasService.aprovar(id, request.user.id);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
     @Patch(':id/rejeitar')
-    rejeitar(@Param('id', ParseIntPipe) id:number) {
-        return this.vendasService.rejeitar(id);
+    rejeitar(@Param('id', ParseIntPipe) id:number, @Req() request: RequisicaoAutenticada) {
+        return this.vendasService.rejeitar(id, request.user.id);
     }
 }

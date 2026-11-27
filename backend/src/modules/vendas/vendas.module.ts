@@ -6,9 +6,10 @@ import { Venda } from './venda.entity'
 import { Cliente } from '../clientes/cliente.entity';
 import { Veiculo } from '../veiculos/veiculo.entity';
 import { Usuario } from '../usuarios/usuario.entity';
+import { Auditoria } from '../auditoria/auditoria.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Venda, Cliente, Veiculo, Usuario])],
+  imports: [TypeOrmModule.forFeature([Venda, Cliente, Veiculo, Usuario, Auditoria])],
   providers: [VendasService],
   controllers: [VendasController]
 })
