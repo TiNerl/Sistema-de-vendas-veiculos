@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, MinLength, MaxLength, IsIn } from 'class-validator';
+import { IsCPF } from 'cpf-cnpj-validator/class-validator'
 
 import type { Perfil } from '../usuario.entity';
 
@@ -8,6 +9,7 @@ export class CriarUsuarioDto {
   @MaxLength(100)
   nome: string;
 
+  @IsCPF({ message: 'Formato de CPF inválido' })
   @IsString()
   @IsNotEmpty()
   @MinLength(11)
