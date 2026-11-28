@@ -182,7 +182,27 @@ onMounted(carregarUsuarios)
             <tr v-for="usuario in usuariosFiltrados" :key="usuario.id_usuario">
               <td class="user-primary">{{ usuario.nome }}</td><td>{{ usuario.cpf }}</td><td>{{ perfilLegivel(usuario.perfil) }}</td>
               <td><span class="status-badge" :class="usuario.ativo ? 'status-badge--active' : 'status-badge--inactive'">{{ usuario.ativo ? 'Ativo' : 'Inativo' }}</span></td>
-              <td><button v-if="usuario.ativo" class="table-action table-action--danger" type="button" :disabled="enviando" @click="abrirConfirmacao(usuario)">Inativar</button><span v-else class="table-action table-action--disabled">—</span></td>
+              <td>
+                <template v-if="usuario.ativo">
+                  <RouterLink
+                    class="table-action"
+                    :to="{ name: 'editar-usuario', params: { id: usuario.id_usuario } }"
+                    :aria-label="`Editar ${usuario.nome}`"
+                  >
+                    Editar
+                  </RouterLink>
+                  <span aria-hidden="true"> · </span>
+                  <button
+                    class="table-action table-action--danger"
+                    type="button"
+                    :disabled="enviando"
+                    @click="abrirConfirmacao(usuario)"
+                  >
+                    Inativar
+                  </button>
+                </template>
+                <span v-else class="table-action table-action--disabled">—</span>
+              </td>
             </tr>
           </tbody>
         </table>

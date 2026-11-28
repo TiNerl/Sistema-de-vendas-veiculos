@@ -16,8 +16,26 @@ export interface NovoUsuario {
   perfil: PerfilUsuario
 }
 
+export interface AtualizacaoUsuario {
+  nome?: string
+  senha?: string
+}
+
 export async function listarUsuarios(): Promise<Usuario[]> {
   const resposta = await api.get<Usuario[]>('/usuarios')
+  return resposta.data
+}
+
+export async function buscarUsuario(id: number): Promise<Usuario> {
+  const resposta = await api.get<Usuario>(`/usuarios/${id}`)
+  return resposta.data
+}
+
+export async function atualizarUsuario(
+  id: number,
+  dados: AtualizacaoUsuario,
+): Promise<Usuario> {
+  const resposta = await api.patch<Usuario>(`/usuarios/${id}`, dados)
   return resposta.data
 }
 

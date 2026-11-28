@@ -5,6 +5,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue'
 import ListaUsuariosView from '@/views/ListaUsuariosView.vue'
 import CadastrarUsuarioView from '@/views/CadastrarUsuarioView.vue'
 import InativarUsuarioView from '@/views/InativarUsuarioView.vue'
+import EditarUsuarioView from '@/views/EditarUsuarioView.vue'
 import VendLayout from '@/layouts/VendLayout.vue'
 import VendedorDashboardView from '@/views/VendedorDashboardView.vue'
 import VeiculosVendedorView from '@/views/VeiculosVendedorView.vue'
@@ -126,6 +127,16 @@ const router = createRouter({
             requerAutenticacao: true,
             apenasAdministrador: true,
             titulo: 'Cadastrar usuário',
+          },
+        },
+        {
+          path: 'admin/usuarios/:id/editar',
+          name: 'editar-usuario',
+          component: EditarUsuarioView,
+          meta: {
+            requerAutenticacao: true,
+            apenasAdministrador: true,
+            titulo: 'Editar usuário',
           },
         },
         {
