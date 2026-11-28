@@ -146,6 +146,17 @@ async function sair() {
               </svg>
               <span>Relatórios</span>
             </RouterLink>
+            <RouterLink
+              class="sidebar-link"
+              exact-active-class="sidebar-link--current"
+              to="/admin/auditoria"
+              @click="menuAberto = false"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5" />
+              </svg>
+              <span>Auditoria</span>
+            </RouterLink>
           </div>
 
           <span class="nav-label">Gestão de usuários</span>
